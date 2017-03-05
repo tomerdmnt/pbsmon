@@ -3,9 +3,7 @@
 import argparse
 import sys
 import math
-from node import getnodes, getclusters
-from job import getjobs
-from queue import getqueues
+from pbsmon import getnodes, getclusters, getjobs, getqueues
 
 def _ls_cmd(args):
 	if args.cluster:
