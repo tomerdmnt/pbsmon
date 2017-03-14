@@ -1,4 +1,5 @@
 
+from size import Size
 from datetime import datetime, timedelta
 import re
 
@@ -27,7 +28,7 @@ def parsedatetime(val):
 	return datetime.strptime(val, '%a %b %d %H:%M:%S %Y')
 
 def parsesize(val):
-	return (int(val[:-2]), val[-2:])
+	return Size(val)
 
 def parselist(val):
 	return [v.strip() for v in val.split(',')]

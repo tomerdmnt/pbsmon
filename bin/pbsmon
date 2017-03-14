@@ -4,6 +4,8 @@ import argparse
 import sys
 import math
 from pbsmon import getnodes, getclusters, getjobs, getqueues
+from pbsmon import runtime
+from pbsmon import Size
 
 def _ls_cmd(args):
 	if args.cluster:
@@ -23,45 +25,72 @@ def _queues_cmd(args):
 		print(q)
 
 def _cpuutil_cmd(args):
+	if args.by_user:
+		return _cpuutil_by_user(args)
 	nodes = getnodes(args.cluster)
-	fmt = '{0:<20} {1:>10}/{2:<10} {3:>20}'
+	fmt = '{0:<20} {1:>10}/{2:<10} {3:<20}'
 	total_used = total_available = 0
 	for node in nodes:
-		total_used += node.get('resources_assigned.ncpus')
-		total_available += node.get('resources_available.ncpus')
+		total_used += node.get('resources_assigned.ncpus', 0)
+		total_available += node.get('resources_available.ncpus', 0)
 		print fmt.format(
 			node.get('hostname'),
-			node.get('resources_assigned.ncpus'),
-			node.get('resources_available.ncpus'),
-			node.get('comment', ''))
+			node.get('resources_assigned.ncpus', 0),
+			node.get('resources_available.ncpus', 0),
+			node.get('state', ''))
 	print('-----------------------------')
 	print(fmt.format('total:', total_used, total_available, ''))
 
+def _cpuutil_by_user(args):
+	jobs = getjobs(args.cluster)
+	jobs = [j for j in jobs if j.get('job_state','') == 'R']
+	cpu_per_user = {}
+	for j in jobs:
+		user = j.get('user')
+		ncpus = j.get('resources_used.ncpus', 0)
+		cpu_per_user[user] = cpu_per_user.get(user, 0) + ncpus
+
+	for user, ncpus in cpu_per_user.items():
+		print('{0:<20} {1:10}'.format(user, ncpus))
+
 def _memutil_cmd(args):
+	if args.by_user:
+		return _memutil_by_user(args)
 	nodes = getnodes(args.cluster)
 	fmt = '{0:<20} {1:>10}/{2:<10} {3:>20}'
-	total_used = total_available = 0
-
-	factors = ('b', 'kb', 'mb', 'gb')
-	sizeinbytes = lambda sz: sz[0]*(1024**factors.index(sz[1]))
-	def prettyprint(bytes):
-		i = int(math.floor(math.log(bytes, 1024))) if bytes > 0 else 1
-		i = min(i, 3)
-		p = math.pow(1024, i)
-		return '%d%s' % (round(bytes/p, 2), factors[i])
+	total_used = total_available = Size('0kb')
 
 	for node in nodes:
-		used = sizeinbytes(node.get('resources_assigned.mem'))
-		available = sizeinbytes(node.get('resources_available.mem'))
+		used = node.get('resources_assigned.mem', Size('0kb'))
+		available = node.get('resources_available.mem', Size('0kb'))
 		total_used += used
 		total_available += available
 		print fmt.format(
 			node.get('hostname'),
-			prettyprint(used),
-			prettyprint(available),
-			node.get('comment', ''))
+			used,
+			available,
+			node.get('state', ''))
 	print('-----------------------------')
-	print(fmt.format('total:', prettyprint(total_used), prettyprint(total_available), ''))
+	print(fmt.format('total:', total_used, total_available, ''))
+
+def _memutil_by_user(args):
+	jobs = getjobs(args.cluster)
+	jobs = [j for j in jobs if j.get('job_state','') == 'R']
+	mem_per_user = {}
+	for j in jobs:
+		user = j.get('user')
+		mem_list = j.get('resource_list.mem', Size('0kb'))
+		mem_used  = j.get('resources_used.mem', Size('0kb'))
+		if not user in mem_per_user:
+			mem_per_user[user] = (Size('0kb'), Size('0kb'))
+		mem_per_user[user] = (
+			mem_per_user.get(user)[0] + mem_used,
+			mem_per_user.get(user)[1] + mem_list
+		)
+
+	for user, mem in mem_per_user.items():
+		print('{0:<20} {1:>10}/{2}'.format(user, mem[0], mem[1]))
+
 
 def _walltime0_cmd(args):
 	jobs = getjobs(args.cluster)
@@ -72,8 +101,23 @@ def _walltime0_cmd(args):
 def _cputime0_cmd(args):
 	jobs = getjobs(args.cluster)
 	for j in jobs:
-		if j.get('job_state') == 'R' and j.get('resources_used.cput').total_seconds() == 0 and j.get('resources_used.walltime').total_seconds() > 0:
-			print j.get('Id')
+		state = j.get('job_state')
+		walltime = j.get('resources_used.walltime')
+		cputime  = j.get('resources_used.cput')
+		if state == 'R' and walltime.total_seconds() > 0:
+			if (cputime.total_seconds()/walltime.total_seconds()) < args.k:
+				print j.get('id')
+			
+def _runtime_cmd(args):
+	for job, stats in runtime.outliers(args.cluster, args.user, args.k):
+		id = job.get('id')
+		jobname = job.get('job_name')
+		walltime = job.get('resources_used.walltime')
+		stats = map(lambda x: x.total_seconds(), stats)
+		'{0}: {1}: ended in {2} seconds, similar jobs ended in {3}'.format(
+			id, jobname,
+			walltime.total_seconds(),
+			stats)
 
 def _main():
 	# command arguments parsers
@@ -111,6 +155,7 @@ def _main():
 	cpuutil_parser = subparsers.add_parser('cpuutil', help="Display cluster's CPU utilization",
 						description=cpuutil_description)
 	cpuutil_parser.add_argument('cluster', help='cluster name (i.e. tamir-short)', default='', nargs='?')
+	cpuutil_parser.add_argument('-u', '--by-user', action='store_true', dest='by_user', help='cpu utilization by user')
 	cpuutil_parser.set_defaults(func=_cpuutil_cmd)
 
 	cpuutil_parser._positionals.title = 'arguments'
@@ -123,6 +168,7 @@ def _main():
 	memutil_parser = subparsers.add_parser('memutil', help="Display cluster's Memory utilization",
 						description=memutil_description)
 	memutil_parser.add_argument('cluster', help='cluster name (i.e. tamir-short)', default='', nargs='?')
+	memutil_parser.add_argument('-u', '--by-user', action='store_true', dest='by_user', help='memory utilization by user usage/requested')
 	memutil_parser.set_defaults(func=_memutil_cmd)
 
 	memutil_parser._positionals.title = 'arguments'
@@ -140,15 +186,30 @@ def _main():
 	walltime0_parser._optionals.title = 'flags'
 
 	# cputime0 sub command
-	cputime0_description="""List jobs with status R and cpu 00:00:00"""
+	cputime0_description="""List jobs with cputime/walltime ratio smaller than k"""
 
-	cputime0_parser = subparsers.add_parser('cputime0', help="List running jobs with cpu 0",
+	cputime0_parser = subparsers.add_parser('cputime0', help="List running jobs insufficient cputime",
 						description=cputime0_description)
 	cputime0_parser.add_argument('cluster', help='cluster name (i.e. tamir-short)', default='', nargs='?')
+	cputime0_parser.add_argument('-k', type=float, dest='k', default=.5, help='minimum utilization ratio (default: .5)')
 	cputime0_parser.set_defaults(func=_cputime0_cmd)
 
 	cputime0_parser._positionals.title = 'arguments'
 	cputime0_parser._optionals.title = 'flags'
+
+	# runtime-outliers sub command
+	runtime_description="""Long running process to locate jobs that ended too quickly or too slowly
+	relative to similar jobs. Uses outlier detection"""
+
+	runtime_parser = subparsers.add_parser('runtime-outliers', help="List jobs with unlikely runtime",
+						description=runtime_description)
+	runtime_parser.add_argument('cluster', help='cluster name (i.e. tamir-short)', default='', nargs='?')
+	runtime_parser.add_argument('-u', '--user', type=str, dest='user', help='jobs by username')
+	runtime_parser.add_argument('-k', type=float, dest='k', default=1.5, help='outlier detection constant (default: 1.5)')
+	runtime_parser.set_defaults(func=_runtime_cmd)
+
+	runtime_parser._positionals.title = 'arguments'
+	runtime_parser._optionals.title = 'flags'
 
 	# print help when no arguments supplied
 	if len(sys.argv) == 1:

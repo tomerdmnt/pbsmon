@@ -6,3 +6,5 @@ pbsmon/job.py
 pbsmon/node.py
 pbsmon/queue.py
 pbsmon/resource.py
+pbsmon/runtime.py
+pbsmon/size.py

@@ -7,6 +7,8 @@ class Node(resource.Resource):
 		parser = resource.findparser(val)
 		if key == 'resources_available.Qlist':
 			parser = resource.parselist
+		elif key == 'state':
+			parser = str
 		self[key] = parser(val)
 	
 	def __hash__(self):

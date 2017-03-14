@@ -34,7 +34,7 @@ def getjobs(cluster=None):
 					jobs.append(j)
 			else:
 				q = j.get('queue')
-				qlist = queues[q].get('default_chunk.Qlist')
+				qlist = queues.get(q, {}).get('default_chunk.Qlist', [])
 				jobnodes = [n.get('hostname') for n in nodes if qlist in n.get('resources_available.Qlist', [])]
 				if set(jobnodes).issubset(clusternodes):
 					jobs.append(j)
