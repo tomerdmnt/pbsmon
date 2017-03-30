@@ -3,6 +3,7 @@
 import argparse
 import sys
 import math
+import time
 from pbsmon import getnodes, getclusters, getjobs, getqueues
 from pbsmon import runtime
 from pbsmon import Size
@@ -118,6 +119,7 @@ def _runtime_cmd(args):
 			id, jobname,
 			walltime.total_seconds(),
 			stats)
+		time.sleep(60)
 
 def _main():
 	# command arguments parsers

@@ -1,5 +1,4 @@
 
-import time
 import math
 from job import getjobs
 
@@ -66,5 +65,3 @@ def outliers(cluster, user, k):
 			jobname = j.get('job_name')
 			if isoutlier(stats.get(jobname), j.get('resources_used.walltime'), k):
 				yield (j, stats[jobname])
-
-		time.sleep(60)
