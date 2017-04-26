@@ -76,15 +76,16 @@ def checkoutliers(cluster, alertfn):
 		alertfn(user, msg)
 
 def run(cluster, alertfn):
-	jobs = getjobs(cluster)
-	nodes = getnodes(cluster)
-	if jobsQueued(jobs):
-		for n in nodesWithUnusedCores(nodes):
-			checkmemabused(n, alertfn)
-	checkcput(jobs, alertfn)
-	#checkofflinenodes()
-	#checkdisktamir1()
-	checkoutliers(cluster, alertfn)
-	checkclusters(alertfn)
+	while True:
+		jobs = getjobs(cluster)
+		nodes = getnodes(cluster)
+		if jobsQueued(jobs):
+			for n in nodesWithUnusedCores(nodes):
+				checkmemabused(n, alertfn)
+		checkcput(jobs, alertfn)
+		#checkofflinenodes()
+		#checkdisktamir1()
+		checkoutliers(cluster, alertfn)
+		checkclusters(alertfn)
 
-	time.sleep(SLEEP_TIME)
+		time.sleep(SLEEP_TIME)
