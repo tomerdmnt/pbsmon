@@ -5,6 +5,7 @@ from runtime import outliers
 from size import Size
 from datetime import timedelta
 from sets import Set
+import runtime
 
 # configuration
 SLEEP_TIME = 60*10
