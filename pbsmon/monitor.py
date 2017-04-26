@@ -38,7 +38,7 @@ def checkcput(jobs, alertfn):
 		cput = j.get('resources_used.cput', timedelta(0)).total_seconds()
 		wallt = j.get('resources_used.walltime', timedelta(0)).total_seconds()
 		if wallt > MIN_WALL_TIME:
-			if cput/float(walltime) > MIN_CPUT_RATIO:
+			if cput/float(wallt) > MIN_CPUT_RATIO:
 				alertfn(j.get('user', ''), 'job %s has low cputime' % j.get('id', ''))
 
 def checkclusters(alertfn):
