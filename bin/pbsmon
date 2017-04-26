@@ -7,6 +7,7 @@ import time
 from pbsmon import getnodes, getclusters, getjobs, getqueues
 from pbsmon import runtime
 from pbsmon import Size
+from pbsmon import monitor
 
 def _ls_cmd(args):
 	if args.cluster:
@@ -108,19 +109,26 @@ def _cputime0_cmd(args):
 		if state == 'R' and walltime.total_seconds() > 0:
 			if (cputime.total_seconds()/walltime.total_seconds()) < args.k:
 				print j.get('id')
-			
+
 def _runtime_cmd(args):
 	for job, stats in runtime.outliers(args.cluster, args.user, args.k):
+		if job == None:
+			time.sleep(60)
+			continue
 		id = job.get('id')
 		jobname = job.get('job_name')
 		walltime = job.get('resources_used.walltime')
 		stats = map(lambda x: x.total_seconds(), stats)
-		'{0}: {1}: ended in {2} seconds, similar jobs ended in {3}'.format(
+		print('{0}: {1}: ended in {2} seconds, similar jobs ended in {3}'.format(
 			id, jobname,
 			walltime.total_seconds(),
-			stats)
-		time.sleep(60)
+			stats))
 
+def _monitor_cmd(args):
+	def alertfn(to, msg):
+		print("to: %s, msg: %s" % (to, msg))
+	monitor.run(args.cluster, alertfn)
+			
 def _main():
 	# command arguments parsers
 	parser = argparse.ArgumentParser(prog='pbsmon')
@@ -212,6 +220,17 @@ def _main():
 
 	runtime_parser._positionals.title = 'arguments'
 	runtime_parser._optionals.title = 'flags'
+
+	# monitor sub command
+	monitor_description="""monitor simulation"""
+
+	monitor_parser = subparsers.add_parser('monitor-outliers', help="monitor simulation",
+						description=monitor_description)
+	monitor_parser.add_argument('cluster', help='cluster name (i.e. tamir-short)', default='tamir-nano4', nargs='?')
+	monitor_parser.set_defaults(func=_monitor_cmd)
+
+	monitor_parser._positionals.title = 'arguments'
+	monitor_parser._optionals.title = 'flags'
 
 	# print help when no arguments supplied
 	if len(sys.argv) == 1:

@@ -65,3 +65,4 @@ def outliers(cluster, user, k):
 			jobname = j.get('job_name')
 			if isoutlier(stats.get(jobname), j.get('resources_used.walltime'), k):
 				yield (j, stats[jobname])
+		yield (None, None)

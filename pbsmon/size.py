@@ -22,6 +22,9 @@ class Size():
 	
 	def __repr__(self):
 		return self.prettyprint()
+
+	def __str__(self):
+		return self.prettyprint()
 	
 	def __add__(self, other):
 		res = Size.frombytes(self._bytes)
