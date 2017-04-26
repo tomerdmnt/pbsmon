@@ -21,15 +21,17 @@ def nodesWithUnusedCores(nodes):
 def checkmemabuse(node, jobs, alertfn):
 	# calculate the average memory each job takes
 	memory_sum = 0
+	memory_avg = 0
 	njobs = 0
 	users = []
-	node_host = node.get('host', 'n/a')
+	node_host = node.get('hostname', 'n/a')
 	for j in jobs:
 		if j.get('exec_host', '').split('/')[0] == node_host:
 			memory_sum += j.get('resource_list.mem', Size.frombytes(0)).bytes()
 			njobs += 1
 			users.append(j.get('user', ''))
-	memory_avg = memory_sum/float(njobs)
+	if njobs > 0:
+		memory_avg = memory_sum/float(njobs)
 	if memory_sum + memory_avg > j.get('resources_available.mem', Size.frombytes(0)).bytes():
 		for u in Set(users):
 			alertfn(u, 'memory abuse on node %s, check jobs running' % node_host)
@@ -81,7 +83,7 @@ def run(cluster, alertfn):
 		nodes = getnodes(cluster)
 		if jobsQueued(jobs):
 			for n in nodesWithUnusedCores(nodes):
-				checkmemabused(n, alertfn)
+				checkmemabuse(n, jobs, alertfn)
 		checkcput(jobs, alertfn)
 		#checkofflinenodes()
 		#checkdisktamir1()
