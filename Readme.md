@@ -9,7 +9,7 @@ pbsmon is a command-line utility, python module and monitoring daemon for the PB
 
 git clone
 ```
-$ git clone gitlab.com/tomerdmnt/pbsmon
+$ git clone https://gitlab.com/tomerdmnt/pbsmon
 ```
 install on the head node. use the **--user flag** to install locally without root permissions
 ```
@@ -149,8 +149,15 @@ $$
 You can determine the constant $k$ with the -k flag (default 1.5), and monitor only after certain user's job using -u [user] flag.
 
 ```
-$ pbsmon runtime-outliers -k=2
+$ pbsmon runtime-outliers -k=2 tamir-nano4
 ...
+```
+
+### pbsmon monitor
+Monitoring simulation, where the alerts and recepients are written to stdout, and no emails are sent.
+
+```
+$ pbsmon monitor tamir-nano4
 ```
 
 ## python module usage
