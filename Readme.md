@@ -9,7 +9,7 @@ pbsmon is a command-line utility, python module and monitoring daemon for the PB
 
 git clone
 ```
-$ git clone https://gitlab.com/tomerdmnt/pbsmon
+power8$ git clone https://gitlab.com/tomerdmnt/pbsmon
 ```
 install on the head node. use the **--user flag** to install locally without root permissions
 ```
@@ -18,6 +18,12 @@ power8$ cd pbsmon && python setup.py install --user
 if **--user flag** was used add bin directory to $PATH variable
 ```
 power8$ export PATH=$PATH:~/.local/bin/
+```
+
+### installation one-liner
+
+```
+git clone https://gitlab.com/tomerdmnt/pbsmon && cd pbsmon && python setup.py install --user && echo "export PATH=$PATH:~/.local/bin/" >> ~/.bashrc && . ~/.bashrc
 ```
 
 ## command-line usage
