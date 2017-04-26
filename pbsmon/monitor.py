@@ -47,17 +47,17 @@ def checkclusters(alertfn):
 	nano4 = Set(getnodes('nano'))
 	tamirshort = Set(getnodes('tamir-short'))
 	
-	diff = tamirnano4.difference(nano4).difference(tamirshort)
+	diff = (tamirnano4.difference(nano4)).difference(tamirshort)
 	for server in diff:
-		alertfn("system", "%s in tamir-nano4 and not in nano or tamir-short")
+		alertfn("system", "%s in tamir-nano4 and not in nano or tamir-short" % server)
 
 	diff = nano4.difference(tamirnano4)
 	for server in diff:
-		alertfn("system", "%s in nano4 and not in tamir-nano4")
+		alertfn("system", "%s in nano4 and not in tamir-nano4" % server)
 
 	diff = tamirshort.difference(tamirnano4)
 	for server in diff:
-		alertfn("system", "%s in tamir-short and not in tamir-nano4")
+		alertfn("system", "%s in tamir-short and not in tamir-nano4" % server)
 
 def checkoutliers(cluster, alertfn):
 	for job, stats in runtime.outliers(cluster):
