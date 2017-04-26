@@ -23,7 +23,7 @@ power8$ export PATH=$PATH:~/.local/bin/
 ### installation one-liner
 
 ```
-git clone https://gitlab.com/tomerdmnt/pbsmon && cd pbsmon && python setup.py install --user && echo "export PATH=$PATH:~/.local/bin/" >> ~/.bashrc && . ~/.bashrc
+git clone https://gitlab.com/tomerdmnt/pbsmon && cd pbsmon && python setup.py install --user && echo "export PATH=\$PATH:~/.local/bin/" >> ~/.bashrc && . ~/.bashrc
 ```
 
 ## command-line usage
