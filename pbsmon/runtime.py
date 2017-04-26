@@ -58,7 +58,7 @@ def isoutlier(data, x, k=1.5):
 		return True
 	return False
 
-def outliers(cluster, user, k):
+def outliers(cluster, user=None, k=1.5):
 	while True:
 		for j in check_ended_jobs(cluster, user):
 			addstat(j)
