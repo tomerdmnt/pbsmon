@@ -34,7 +34,8 @@ def checkmemabuse(node, jobs, alertfn):
 		memory_avg = memory_sum/float(njobs)
 	if memory_sum + memory_avg > j.get('resources_available.mem', Size.frombytes(0)).bytes():
 		for u in Set(users):
-			alertfn(u, 'memory abuse on node %s, check jobs running' % node_host)
+			alertfn(u, 'memory abuse (unused cores) on node %s, average job memory: %s' %
+				(node_host, Size.frombytes(memory_avg)))
 
 def checkcput(jobs, alertfn):
 	for j in jobs:
