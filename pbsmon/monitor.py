@@ -43,9 +43,10 @@ def checkcput(jobs, alertfn):
 				alertfn(j.get('user', ''), 'job %s has low cputime' % j.get('id', ''))
 
 def checkclusters(alertfn):
-	tamirnano4 = Set(getnodes('tamir-nano4'))
-	nano4 = Set(getnodes('nano'))
-	tamirshort = Set(getnodes('tamir-short'))
+	gethostname = lambda x: x.get('hostname', '')
+	tamirnano4 = Set(map(gethostname, getnodes('tamir-nano4')))
+	nano4 = Set(map(gethostname, getnodes('nano')))
+	tamirshort = Set(map(gethostname, getnodes('tamir-short')))
 	
 	diff = (tamirnano4.difference(nano4)).difference(tamirshort)
 	for server in diff:

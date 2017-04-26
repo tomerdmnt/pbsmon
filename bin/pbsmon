@@ -4,6 +4,7 @@ import argparse
 import sys
 import math
 import time
+import datetime
 from pbsmon import getnodes, getclusters, getjobs, getqueues
 from pbsmon import runtime
 from pbsmon import Size
@@ -126,7 +127,7 @@ def _runtime_cmd(args):
 
 def _monitor_cmd(args):
 	def alertfn(to, msg):
-		print("to: %s, msg: %s" % (to, msg))
+		print("%s : to: %s, msg: %s" % (datetime.datetime.now().ctime(), to, msg))
 	monitor.run(args.cluster, alertfn)
 			
 def _main():
