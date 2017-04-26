@@ -224,7 +224,7 @@ def _main():
 	# monitor sub command
 	monitor_description="""monitor simulation"""
 
-	monitor_parser = subparsers.add_parser('monitor-outliers', help="monitor simulation",
+	monitor_parser = subparsers.add_parser('monitor', help="monitor simulation",
 						description=monitor_description)
 	monitor_parser.add_argument('cluster', help='cluster name (i.e. tamir-short)', default='tamir-nano4', nargs='?')
 	monitor_parser.set_defaults(func=_monitor_cmd)
