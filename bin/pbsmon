@@ -5,6 +5,7 @@ import sys
 import math
 import time
 import datetime
+from sets import Set
 from pbsmon import getnodes, getclusters, getjobs, getqueues
 from pbsmon import runtime
 from pbsmon import Size
