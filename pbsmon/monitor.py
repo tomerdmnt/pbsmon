@@ -6,6 +6,7 @@ from size import Size
 from datetime import timedelta
 from sets import Set
 import runtime
+import traceback
 
 # configuration
 SLEEP_TIME = 60*10
@@ -79,16 +80,20 @@ def checkoutliers(cluster, alertfn):
 		alertfn(user, msg)
 
 def run(cluster, alertfn):
-	while True:
-		jobs = getjobs(cluster)
-		nodes = getnodes(cluster)
-		if jobsQueued(jobs):
-			for n in nodesWithUnusedCores(nodes):
-				checkmemabuse(n, jobs, alertfn)
-		checkcput(jobs, alertfn)
-		#checkofflinenodes()
-		#checkdisktamir1()
-		checkoutliers(cluster, alertfn)
-		checkclusters(alertfn)
+	try:
+		while True:
+			jobs = getjobs(cluster)
+			nodes = getnodes(cluster)
+			if jobsQueued(jobs):
+				for n in nodesWithUnusedCores(nodes):
+					checkmemabuse(n, jobs, alertfn)
+			checkcput(jobs, alertfn)
+			#checkofflinenodes()
+			#checkdisktamir1()
+			checkoutliers(cluster, alertfn)
+			checkclusters(alertfn)
 
-		time.sleep(SLEEP_TIME)
+			time.sleep(SLEEP_TIME)
+	except Exception as e:
+		traceback.print_exc()
+
