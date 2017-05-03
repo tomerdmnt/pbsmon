@@ -48,10 +48,10 @@ def timedelta_str(td):
 
 def checkcput(jobs, alertfn):
 	for j in jobs:
-		cput = j.get('resources_used.cput', timedelta(0)).total_seconds()
-		wallt = j.get('resources_used.walltime', timedelta(0)).total_seconds()
-		if wallt > MIN_WALL_TIME:
-			if cput/float(wallt) < MIN_CPUT_RATIO:
+		cput = j.get('resources_used.cput', timedelta(0))
+		wallt = j.get('resources_used.walltime', timedelta(0))
+		if wallt.total_seconds() > MIN_WALL_TIME:
+			if cput.total_seconds()/float(wallt.total_seconds()) < MIN_CPUT_RATIO:
 				alertfn(j.get('user', ''), 'job {0} has low cputime {1} / {2}'.format(
 					j.get('id', ''),
 					timedelta_str(cput),
