@@ -145,7 +145,7 @@ def _memabuse_cmd(args):
 		if njobs > 0:
 			memory_avg = memory_sum/float(njobs)
 		if memory_sum + memory_avg > j.get('resources_available.mem', Size.frombytes(0)).bytes():
-			printf("%s\t%s\t%s" % (node_host, Size.frombytes(memory_avg), ', '.join(Set(users))))
+			print("%s\t%s\t%s" % (node_host, Size.frombytes(memory_avg), ', '.join(Set(users))))
 	
 	jobs = getjobs(args.cluster)
 	nodes = getnodes(args.cluster)
