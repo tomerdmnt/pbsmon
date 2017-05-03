@@ -127,8 +127,6 @@ def _runtime_cmd(args):
 			stats))
 
 def _memabuse_cmd(args):
-	def jobsQueued(jobs):
-		return (len([j for j in jobs if j.get('job_state','') == 'Q']) > 0)
 	def nodesWithUnusedCores(nodes):
 		return [n for n in nodes if n.get('resources_assigned.ncpus') < n.get('resources_available.ncpus')]
 	def checkmemabuse(node, jobs):
@@ -138,6 +136,8 @@ def _memabuse_cmd(args):
 		njobs = 0
 		users = []
 		node_host = node.get('hostname', 'n/a')
+		used = node.get('resources_assigned.mem', Size('0kb'))
+		available = node.get('resources_available.mem', Size('0kb'))
 		for j in jobs:
 			if j.get('exec_host', '').split('/')[0] == node_host:
 				memory_sum += j.get('resource_list.mem', Size.frombytes(0)).bytes()
@@ -145,15 +145,20 @@ def _memabuse_cmd(args):
 				users.append(j.get('user', ''))
 		if njobs > 0:
 			memory_avg = memory_sum/float(njobs)
-		if memory_sum + memory_avg > j.get('resources_available.mem', Size.frombytes(0)).bytes():
-			print("%s\t%s\t%s" % (node_host, Size.frombytes(memory_avg), ', '.join(Set(users))))
+	fmt = '{0:<20} {1:>10}/{2:<10} {3:>20}'
+		if memory_sum + memory_avg > available.bytes():
+			print("{0:<20}{1:<5} jobs{2:>10}/{3:<10} {4}".format(
+				node_host,
+				njobs,
+				used,
+				available
+				','.join(Set(users))))
 	
 	jobs = getjobs(args.cluster)
 	nodes = getnodes(args.cluster)
 
-	if jobsQueued(jobs):
-		for node in nodesWithUnusedCores(nodes):
-			checkmemabuse(node, jobs)
+	for node in nodesWithUnusedCores(nodes):
+		checkmemabuse(node, jobs)
 
 def _monitor_cmd(args):
 	def alertfn(to, msg):
