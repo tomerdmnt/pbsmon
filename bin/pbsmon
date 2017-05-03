@@ -130,7 +130,7 @@ def _memabuse_cmd(args):
 		return (len([j for j in jobs if j.get('job_state','') == 'Q']) > 0)
 	def nodesWithUnusedCores(nodes):
 		return [n for n in nodes if n.get('resources_assigned.ncpus') < n.get('resources_available.ncpus')]
-	def checkmemabuse(node, jobs, alertfn):
+	def checkmemabuse(node, jobs):
 		# calculate the average memory each job takes
 		memory_sum = 0
 		memory_avg = 0
@@ -152,7 +152,7 @@ def _memabuse_cmd(args):
 
 	if jobsQueued(jobs):
 		for node in nodesWithUnusedCores(nodes):
-			checkmemabuse(node, jobs, alertfn)
+			checkmemabuse(node, jobs)
 
 def _monitor_cmd(args):
 	def alertfn(to, msg):
