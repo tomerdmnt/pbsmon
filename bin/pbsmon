@@ -150,7 +150,7 @@ def _memabuse_cmd(args):
 				node_host,
 				njobs,
 				used,
-				available
+				available,
 				','.join(Set(users))))
 	
 	jobs = getjobs(args.cluster)
