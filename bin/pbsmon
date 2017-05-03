@@ -110,7 +110,7 @@ def _cputime_low_cmd(args):
 		cputime  = j.get('resources_used.cput')
 		if state == 'R' and walltime.total_seconds() > 120:
 			if (cputime.total_seconds()/walltime.total_seconds()) < args.k:
-				print j.get('id')
+				print("{0:<20}{1:>10}/{2:<10}".format(j.get('id'), walltime, cputime))
 
 def _runtime_cmd(args):
 	for job, stats in runtime.outliers(args.cluster, args.user, args.k):
