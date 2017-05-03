@@ -38,7 +38,7 @@ def checkmemabuse(node, jobs, alertfn):
 	if memory_sum + memory_avg > available.bytes():
 		for u in Set(users):
 			alertfn(u, 'memory abuse (unused cores) on node %s, memory usage: %s/%s, average job memory: %s' %
-				(node_host, used, available Size.frombytes(memory_avg)))
+				(node_host, used, available, Size.frombytes(memory_avg)))
 
 def timedelta_str(td):
 	s = td.total_seconds()
