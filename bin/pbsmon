@@ -232,7 +232,7 @@ def _main():
 						description=cputime_low_description)
 	cputime_low_parser.add_argument('cluster', help='cluster name (i.e. tamir-short)', default='', nargs='?')
 	cputime_low_parser.add_argument('-k', type=float, dest='k', default=.5, help='minimum utilization ratio (default: .5)')
-	cputime_low_parser.set_defaults(func=_cputime0_cmd)
+	cputime_low_parser.set_defaults(func=_cputime_low_cmd)
 
 	cputime_low_parser._positionals.title = 'arguments'
 	cputime_low_parser._optionals.title = 'flags'
