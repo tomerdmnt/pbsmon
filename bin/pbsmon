@@ -102,6 +102,12 @@ def _walltime0_cmd(args):
 		if j.get('job_state') == 'R' and j.get('resources_used.walltime').total_seconds() == 0:
 			print j.get('Id')
 
+def timedelta_str(td):
+	s = td.total_seconds()
+	hours, remainder = divmod(s, 3600)
+	minutes, seconds = divmod(remainder, 60)
+	return '%s:%s:%s' % (hours, minutes, seconds)
+
 def _cputime_low_cmd(args):
 	jobs = getjobs(args.cluster)
 	for j in jobs:
@@ -110,7 +116,10 @@ def _cputime_low_cmd(args):
 		cputime  = j.get('resources_used.cput')
 		if state == 'R' and walltime.total_seconds() > 120:
 			if (cputime.total_seconds()/walltime.total_seconds()) < args.k:
-				print("{0:<20} {1:>25} cputime out of {2}".format(j.get('id'), cputime, walltime))
+				print("{0:<20}{1:>10}/{2:<10}".format(
+					j.get('id'),
+					timedelta_str(cputime),
+					timedelta_str(walltime)))
 
 def _runtime_cmd(args):
 	for job, stats in runtime.outliers(args.cluster, args.user, args.k):
