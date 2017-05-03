@@ -26,6 +26,8 @@ def checkmemabuse(node, jobs, alertfn):
 	njobs = 0
 	users = []
 	node_host = node.get('hostname', 'n/a')
+	available = node.get('resources_available.mem', Size.frombytes(0))
+	used = node.get('resources_used.mem', Size.frombytes(0))
 	for j in jobs:
 		if j.get('exec_host', '').split('/')[0] == node_host:
 			memory_sum += j.get('resource_list.mem', Size.frombytes(0)).bytes()
@@ -33,10 +35,16 @@ def checkmemabuse(node, jobs, alertfn):
 			users.append(j.get('user', ''))
 	if njobs > 0:
 		memory_avg = memory_sum/float(njobs)
-	if memory_sum + memory_avg > j.get('resources_available.mem', Size.frombytes(0)).bytes():
+	if memory_sum + memory_avg > available.bytes():
 		for u in Set(users):
-			alertfn(u, 'memory abuse (unused cores) on node %s, average job memory: %s' %
-				(node_host, Size.frombytes(memory_avg)))
+			alertfn(u, 'memory abuse (unused cores) on node %s, memory usage: %s/%s, average job memory: %s' %
+				(node_host, used, available Size.frombytes(memory_avg)))
+
+def timedelta_str(td):
+	s = td.total_seconds()
+	hours, remainder = divmod(s, 3600)
+	minutes, seconds = divmod(remainder, 60)
+	return '%02d:%02d:%02d' % (hours, minutes, seconds)
 
 def checkcput(jobs, alertfn):
 	for j in jobs:
@@ -44,7 +52,10 @@ def checkcput(jobs, alertfn):
 		wallt = j.get('resources_used.walltime', timedelta(0)).total_seconds()
 		if wallt > MIN_WALL_TIME:
 			if cput/float(wallt) < MIN_CPUT_RATIO:
-				alertfn(j.get('user', ''), 'job %s has low cputime' % j.get('id', ''))
+				alertfn(j.get('user', ''), 'job {0} has low cputime {1} / {2}'.format(
+					j.get('id', ''),
+					timedelta_str(cput),
+					timedelta_str(wallt)))
 
 def checkclusters(alertfn):
 	gethostname = lambda x: x.get('hostname', '')
