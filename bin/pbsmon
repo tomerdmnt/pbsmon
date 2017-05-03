@@ -145,7 +145,6 @@ def _memabuse_cmd(args):
 				users.append(j.get('user', ''))
 		if njobs > 0:
 			memory_avg = memory_sum/float(njobs)
-	fmt = '{0:<20} {1:>10}/{2:<10} {3:>20}'
 		if memory_sum + memory_avg > available.bytes():
 			print("{0:<20}{1:<5} jobs{2:>10}/{3:<10} {4}".format(
 				node_host,
