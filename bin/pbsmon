@@ -101,13 +101,13 @@ def _walltime0_cmd(args):
 		if j.get('job_state') == 'R' and j.get('resources_used.walltime').total_seconds() == 0:
 			print j.get('Id')
 
-def _cputime0_cmd(args):
+def _cputime_low_cmd(args):
 	jobs = getjobs(args.cluster)
 	for j in jobs:
 		state = j.get('job_state')
 		walltime = j.get('resources_used.walltime')
 		cputime  = j.get('resources_used.cput')
-		if state == 'R' and walltime.total_seconds() > 0:
+		if state == 'R' and walltime.total_seconds() > 120:
 			if (cputime.total_seconds()/walltime.total_seconds()) < args.k:
 				print j.get('id')
 
@@ -124,6 +124,35 @@ def _runtime_cmd(args):
 			id, jobname,
 			walltime.total_seconds(),
 			stats))
+
+def _memabuse_cmd(args):
+	def jobsQueued(jobs):
+		return (len([j for j in jobs if j.get('job_state','') == 'Q']) > 0)
+	def nodesWithUnusedCores(nodes):
+		return [n for n in nodes if n.get('resources_assigned.ncpus') < n.get('resources_available.ncpus')]
+	def checkmemabuse(node, jobs, alertfn):
+		# calculate the average memory each job takes
+		memory_sum = 0
+		memory_avg = 0
+		njobs = 0
+		users = []
+		node_host = node.get('hostname', 'n/a')
+		for j in jobs:
+			if j.get('exec_host', '').split('/')[0] == node_host:
+				memory_sum += j.get('resource_list.mem', Size.frombytes(0)).bytes()
+				njobs += 1
+				users.append(j.get('user', ''))
+		if njobs > 0:
+			memory_avg = memory_sum/float(njobs)
+		if memory_sum + memory_avg > j.get('resources_available.mem', Size.frombytes(0)).bytes():
+			printf("%s\t%s\t%s" % (node_host, Size.frombytes(memory_avg), ', '.join(Set(users))))
+	
+	jobs = getjobs(args.cluster)
+	nodes = getnodes(args.cluster)
+
+	if jobsQueued(jobs):
+		for node in nodesWithUnusedCores(nodes):
+			checkmemabuse(node, jobs, alertfn)
 
 def _monitor_cmd(args):
 	def alertfn(to, msg):
@@ -196,17 +225,17 @@ def _main():
 	walltime0_parser._positionals.title = 'arguments'
 	walltime0_parser._optionals.title = 'flags'
 
-	# cputime0 sub command
-	cputime0_description="""List jobs with cputime/walltime ratio smaller than k"""
+	# cputime_low sub command
+	cputime_low_description="""List jobs with cputime/walltime ratio smaller than k"""
 
-	cputime0_parser = subparsers.add_parser('cputime0', help="List running jobs insufficient cputime",
-						description=cputime0_description)
-	cputime0_parser.add_argument('cluster', help='cluster name (i.e. tamir-short)', default='', nargs='?')
-	cputime0_parser.add_argument('-k', type=float, dest='k', default=.5, help='minimum utilization ratio (default: .5)')
-	cputime0_parser.set_defaults(func=_cputime0_cmd)
+	cputime_low_parser = subparsers.add_parser('cputime', help="List running jobs low cputime",
+						description=cputime_low_description)
+	cputime_low_parser.add_argument('cluster', help='cluster name (i.e. tamir-short)', default='', nargs='?')
+	cputime_low_parser.add_argument('-k', type=float, dest='k', default=.5, help='minimum utilization ratio (default: .5)')
+	cputime_low_parser.set_defaults(func=_cputime0_cmd)
 
-	cputime0_parser._positionals.title = 'arguments'
-	cputime0_parser._optionals.title = 'flags'
+	cputime_low_parser._positionals.title = 'arguments'
+	cputime_low_parser._optionals.title = 'flags'
 
 	# runtime-outliers sub command
 	runtime_description="""Long running process to locate jobs that ended too quickly or too slowly
@@ -221,6 +250,17 @@ def _main():
 
 	runtime_parser._positionals.title = 'arguments'
 	runtime_parser._optionals.title = 'flags'
+
+	# memabuse sub command
+	memabuse_description="""List servers with memory abuse"""
+
+	memabuse_parser = subparsers.add_parser('memabuse', help="List servers with memory abuse",
+						description=memabuse_description)
+	memabuse_parser.add_argument('cluster', help='cluster name (i.e. tamir-short)', default='', nargs='?')
+	memabuse_parser.set_defaults(func=_memabuse_cmd)
+
+	memabuse_parser._positionals.title = 'arguments'
+	memabuse_parser._optionals.title = 'flags'
 
 	# monitor sub command
 	monitor_description="""monitor simulation"""
