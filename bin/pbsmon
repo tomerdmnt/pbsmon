@@ -106,7 +106,7 @@ def timedelta_str(td):
 	s = td.total_seconds()
 	hours, remainder = divmod(s, 3600)
 	minutes, seconds = divmod(remainder, 60)
-	return '%s:%s:%s' % (hours, minutes, seconds)
+	return '%d:%d:%d' % (hours, minutes, seconds)
 
 def _cputime_low_cmd(args):
 	jobs = getjobs(args.cluster)
@@ -116,7 +116,7 @@ def _cputime_low_cmd(args):
 		cputime  = j.get('resources_used.cput')
 		if state == 'R' and walltime.total_seconds() > 120:
 			if (cputime.total_seconds()/walltime.total_seconds()) < args.k:
-				print("{0:<20}{1:>10}/{2:<10}".format(
+				print("{0:<22}{1:>10}/{2}".format(
 					j.get('id'),
 					timedelta_str(cputime),
 					timedelta_str(walltime)))
