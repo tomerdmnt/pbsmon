@@ -116,7 +116,7 @@ def _cputime_low_cmd(args):
 		cputime  = j.get('resources_used.cput')
 		if state == 'R' and walltime.total_seconds() > 120:
 			if (cputime.total_seconds()/walltime.total_seconds()) < args.k:
-				print("{0:<22}{1:>10}/{2}".format(
+				print("{0:<25} {1:>15}/{2:<15}".format(
 					j.get('id'),
 					timedelta_str(cputime),
 					timedelta_str(walltime)))
