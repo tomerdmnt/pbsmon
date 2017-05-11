@@ -20,12 +20,12 @@ class S(BaseHTTPRequestHandler):
 			ifd.close()
 		elif self.path == '/jobs.json':
 			self._set_headers('application/json')
-			jobs = getjobs('tamir-nano4')
+			jobs = getjobs(self.cluster)
 			json.dump(jobs, self.wfile, default=lambda o: o.__str__())
 			ifd.close()
 		elif self.path == '/nodes.json':
 			self._set_headers('application/json')
-			nodes = getnodes('tamir-nano4')
+			nodes = getnodes(self.cluster)
 			json.dump(nodes, self.wfile, default=lambda o: o.__str__())
 			ifd.close()
 #		elif self.path == '/jobs.json':
@@ -54,9 +54,10 @@ class S(BaseHTTPRequestHandler):
 		self._set_headers()
 		self.wfile.write("<html><body><h1>POST!</h1></body></html>")
 
-def run(server_class=HTTPServer, handler_class=S, port=0):
+def run(server_class=HTTPServer, handler_class=S, port=0, cluster):
 	server_address = ('', port)
-	httpd = server_class(server_address, handler_class)
+	httpd = server_class(server_address, handler_class, cluster)
+	httpd.cluster = cluster
 	print('Starting on http://power8.tau.ac.il:%s' % httpd.socket.getsockname()[1])
 	httpd.serve_forever()
 
