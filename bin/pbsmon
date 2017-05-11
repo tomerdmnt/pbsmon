@@ -10,7 +10,7 @@ from pbsmon import getnodes, getclusters, getjobs, getqueues
 from pbsmon import runtime
 from pbsmon import Size
 from pbsmon import monitor
-grom pbsmon import web
+from pbsmon import web
 
 def _ls_cmd(args):
 	if args.cluster:
