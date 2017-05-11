@@ -4,7 +4,6 @@ import json
 import os, sys
 from pbsmon import getjobs
 
-PORT=8080
 PATH = os.path.dirname(os.path.abspath(__file__))
 
 class S(BaseHTTPRequestHandler):
@@ -19,21 +18,26 @@ class S(BaseHTTPRequestHandler):
 			ifd = open(PATH + '/index.html', 'r')
 			self.wfile.write(ifd.read())
 			ifd.close()
-		#elif self.path == '/jobs.json':
-			#self._set_headers('application/json')
-			#jobs = getjobs('tamir-nano4')
-			#json.dump(jobs, self.wfile)
-			#ifd.close()
 		elif self.path == '/jobs.json':
 			self._set_headers('application/json')
-			ifd = open(PATH + '/jobs.json', 'r')
-			self.wfile.write(ifd.read())
+			jobs = getjobs('tamir-nano4')
+			json.dump(jobs, self.wfile, default=lambda o: o.__str__())
 			ifd.close()
 		elif self.path == '/nodes.json':
 			self._set_headers('application/json')
-			ifd = open(PATH + '/nodes.json', 'r')
-			self.wfile.write(ifd.read())
+			nodes = getnodes('tamir-nano4')
+			json.dump(nodes, self.wfile, default=lambda o: o.__str__())
 			ifd.close()
+#		elif self.path == '/jobs.json':
+#			self._set_headers('application/json')
+#			ifd = open(PATH + '/jobs.json', 'r')
+#			self.wfile.write(ifd.read())
+#			ifd.close()
+#		elif self.path == '/nodes.json':
+#			self._set_headers('application/json')
+#			ifd = open(PATH + '/nodes.json', 'r')
+#			self.wfile.write(ifd.read())
+#			ifd.close()
 		elif self.path == '/index.js':
 			self._set_headers('text/javascript')
 			ifd = open(PATH + '/index.js', 'r')
@@ -50,12 +54,11 @@ class S(BaseHTTPRequestHandler):
 		self._set_headers()
 		self.wfile.write("<html><body><h1>POST!</h1></body></html>")
 
-def run(server_class=HTTPServer, handler_class=S, port=80):
+def run(server_class=HTTPServer, handler_class=S, port=0):
 	server_address = ('', port)
 	httpd = server_class(server_address, handler_class)
-	dir(httpd)
-	print('Starting on localhost:%d' % port)
+	print('Starting on http://power8.tau.ac.il:%s' % httpd.socket.getsockname()[1])
 	httpd.serve_forever()
 
 if __name__ == "__main__":
-	run(port=PORT)
+	run()
