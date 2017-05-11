@@ -7,6 +7,7 @@ setup(name='pbsmon',
 		description='PBS monitoring utilities',
 		author='Tomer Diament',
 		author_email='tomer.dmnt@gmail.com',
-		packages=['pbsmon'],
+		packages=['pbsmon', 'pbsmon/web'],
+		package_data={'': ['*.css','*.html','*.js']},
 		scripts=['bin/pbsmon']
 	 )

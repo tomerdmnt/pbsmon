@@ -39,20 +39,20 @@ var jobcolor = function() {
 }();
 
 function serversgraph(nodes, jobs) {
-	var nodes = d3.select("body")
+	var nds = d3.select("body")
 		.selectAll("svg")
 		.data(nodes)
 		.enter().append("svg")
 			.attr("height", 125)
 			.attr("width", 103);
 	
-	nodes.append("text")
+	nds.append("text")
 			.attr("x", 5)
 			.attr("y", 20)
 			.attr("stroke", "#444")
 		.text(function(d){ return d["hostname"]; });
 	
-	nodes.each(function(n) {
+	nds.each(function(n) {
 		var jobtip = d3.tip().attr("class", "d3-tip").html(function (d) {
 			console.log(d);
 			return "<div>" + 
