@@ -297,7 +297,7 @@ def _main():
 
 	web_parser = subparsers.add_parser('web', help="web monitor",
 						description=web_description)
-	web_parser.add_argument('cluster', help='cluster name (i.e. tamir-short)', default='tamir-nano4', nargs='?')
+	web_parser.add_argument('cluster', help='cluster name (i.e. tamir-short)', nargs='?')
 	web_parser.set_defaults(func=_web_cmd)
 
 	web_parser._positionals.title = 'arguments'

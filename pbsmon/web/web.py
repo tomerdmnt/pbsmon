@@ -29,7 +29,10 @@ class S(BaseHTTPRequestHandler):
 		if self.path == '/':
 			self._set_headers('text/html')
 			ifd = open(PATH + '/index.html', 'r')
-			self.wfile.write(ifd.read())
+			data = ifd.read()
+			while data:
+				self.wfile.write(data)
+				data = ifd.read()
 			ifd.close()
 		elif self.path == '/jobs.json':
 			self._set_headers('application/json')
@@ -42,22 +45,34 @@ class S(BaseHTTPRequestHandler):
 #		elif self.path == '/jobs.json':
 #			self._set_headers('application/json')
 #			ifd = open(PATH + '/jobs.json', 'r')
-#			self.wfile.write(ifd.read())
+#			data = ifd.read()
+#			while data:
+#				self.wfile.write(data)
+#				data = ifd.read()
 #			ifd.close()
 #		elif self.path == '/nodes.json':
 #			self._set_headers('application/json')
 #			ifd = open(PATH + '/nodes.json', 'r')
-#			self.wfile.write(ifd.read())
+#			data = ifd.read()
+#			while data:
+#				self.wfile.write(data)
+#				data = ifd.read()
 #			ifd.close()
 		elif self.path == '/index.js':
 			self._set_headers('text/javascript')
 			ifd = open(PATH + '/index.js', 'r')
-			self.wfile.write(ifd.read())
+			data = ifd.read()
+			while data:
+				self.wfile.write(data)
+				data = ifd.read()
 			ifd.close()
 		elif self.path == '/style.css':
 			self._set_headers('text/css')
 			ifd = open(PATH + '/style.css', 'r')
-			self.wfile.write(ifd.read())
+			data = ifd.read()
+			while data:
+				self.wfile.write(data)
+				data = ifd.read()
 			ifd.close()
 
 	def do_POST(self):

@@ -30,72 +30,124 @@ var jobcolor = function() {
 			i = mapsize++;
 			map[usr] = i;
 		}
-		var color =  scale(i);
-		if (job["resources_used.cpupercent"]/job["resource_list.ncpus"] < 50) {
-			color = d3.color(color).brighter().rgb();
+		var color = d3.color(scale(i))
+		if (job["resources_used.cpupercent"]/job["resources_used.ncpus"] < 50) {
+			color.opacity = .7;
 		}
-		return color;
+		return color.rgb();
 	}
 }();
+
+var jobtip = d3.tip().attr("class", "d3-tip")
+	.attr("class", "d3-tip")
+	.offset([15, 5])
+	.html(function (d) {
+		return "<div>" + 
+			"User: " + d["user"] + "<br />" +
+			"Id: " + d["id"] + "<br />" +
+			"CPU Time: " + d["resources_used.cput"] + " / " + d["resource_list.cput"] + "<br />" +
+			"Wall Time: " + d["resources_used.walltime"] + " / " + d["resource_list.walltime"] + "<br />" +
+			"CPU: " + d["resources_used.cpupercent"] + "%" + " of " + d["resources_used.ncpus"] + " cores" + "</br />"
+			"Memory: " + d["resources_used.mem"] + " / " + d["resource_list.mem"] + "<br />" +
+			"Virtual Memory: " + d["resources_used.vmem"] + " / " + d["resource_list.vmem"] + "<br />" +
+			"Physical Memory: " + d["resources_used.pmem"] + " / " + d["resource_list.pmem"] + "<br />" +
+			"</div>";
+	})
+	.direction("se");
+
+var memtip = d3.tip()
+	.attr("class", "d3-tip")
+	.offset([-20, 0])
+	.html(function (d) {
+		var avail = d["resources_available.mem"];
+		var used = d["resources_assigned.mem"];
+
+		return "<div>" +
+			used + "/" + avail +
+			"</div>";
+	});
+
+function memratio(node) {
+	var avail = node["resources_available.mem"];
+	var used = node["resources_assigned.mem"];
+
+	var meminbytes = function(memstr) {
+		var units = memstr.slice(-2);
+		var multiplier = 1;
+		if (units == "kb") multiplier = 1000
+		else if (units == "mb") multiplier = 1000*1000
+		else if (units == "gb") multiplier = 1000*1000*1000
+		else if (units == "tb") multiplier = 1000*1000*1000*1000
+		return parseInt(memstr)*multiplier;
+	}
+	var ratio =  meminbytes(used)/meminbytes(avail);
+	if (ratio < .05) ratio = .05;
+	return ratio;
+}
 
 function serversgraph(nodes, jobs) {
 	var nds = d3.select("body")
 		.selectAll("svg")
 		.data(nodes)
 		.enter().append("svg")
-			.attr("height", 125)
+			.attr("height", 145)
 			.attr("width", 103);
 	
+	nds.call(jobtip);
+	nds.call(memtip);
+
 	nds.append("text")
 			.attr("x", 5)
 			.attr("y", 20)
 			.attr("stroke", "#444")
 		.text(function(d){ return d["hostname"]; });
 	
+	// memory bars
+	nds.append("g")
+			.attr("class", "memory")
+			.attr("transform", "translate(0, 25)")
+			.attr("fill", "pink")
+		.append("rect")
+			.attr("x", 0)
+			.attr("y", 0)
+			.attr("width", function (d) { return 100*memratio(d); })
+			.attr("height", 15)
+			.attr("fill", "red")
+		.on("mouseover", memtip.show)
+		.on("mouseout", memtip.hide)
+		;
+	
 	nds.each(function(n) {
-		var jobtip = d3.tip().attr("class", "d3-tip").html(function (d) {
-			console.log(d);
-			return "<div>" + 
-				"User: " + d["user"] + "<br />" +
-				"Id: " + d["id"] + "<br />" +
-				"CPU Time: " + d["resources_used.cput"] + " / " + d["resource_list.cput"] + "<br />" +
-				"Wall Time: " + d["resources_used.walltime"] + " / " + d["resource_list.walltime"] + "<br />" +
-				"CPU: " + d["resources_used.cpupercent"] + "%" + "</br />"
-				"Memory: " + d["resources_used.mem"] + " / " + d["resource_list.mem"] + "<br />" +
-				"Virtual Memory: " + d["resources_used.vmem"] + " / " + d["resource_list.vmem"] + "<br />" +
-				"Physical Memory: " + d["resources_used.pmem"] + " / " + d["resource_list.pmem"] + "<br />" +
-				"</div>";
-		});
+		//d3.select(this).call(jobtip);
 
-		d3.select(this).call(jobtip);
-
-		var j = d3.select(this)
+		var jbs = d3.select(this)
 			.selectAll("g.job")
 			.data(jobsbyhostname(jobs, n["hostname"]))
 			.enter().append("g")
 				.attr("class", "job")
-				.attr("transform", "translate(0, 25)")
+				.attr("transform", "translate(0, 42)")
+				.attr("stroke", "#444")
+				.attr("stroke-width", ".04em")
 				.attr("fill", function (d) { return jobcolor(d); })
 			.on("mouseover", function(jb) {
-				d3.select(this).attr("opacity", ".7");
+				d3.select(this).attr("fill", function (d) { return d3.color(jobcolor(d)).brighter(); });
 				jobtip.show(jb);
 			})
 			.on("mouseout", function(jb) {
-				d3.select(this).attr("opacity", "1");
+				d3.select(this).attr("fill", function (d) { return jobcolor(d); })
 				jobtip.hide(jb);
 			})
 			;
-		j.exit().remove();
+		jbs.exit().remove();
 
-		j.selectAll("rect")
-			.data(function (d, i) { return d3.range(i, i+d["resource_list.ncpus"] || 0); })
+		counter = 0
+		jbs.selectAll("rect")
+			.data(function (d) { var prev = counter; counter += (d["resources_used.ncpus"] || 0); return d3.range(prev, counter); })
 			.enter().append("rect")
 				.attr("width", 25)
 				.attr("height", 25)
-				.attr("stroke", "#444")
-				.attr("stroke-width", ".04em")
-				.attr("x", function(d) { return (d % 4) * 25; })
-				.attr("y", function(d) { return Math.floor((d)/4) * 25; })
+				.attr("x", function(d) { return ((counter-d-1) % 4) * 25; })
+				.attr("y", function(d) { return Math.floor((counter-d-1)/4) * 25; })
 			.exit().remove()
 			;
 
@@ -105,7 +157,7 @@ function serversgraph(nodes, jobs) {
 			.data(d3.range(n["resources_assigned.ncpus"], n["resources_available.ncpus"]))
 			.enter().append("rect")
 				.attr("class", "unused")
-				.attr("transform", "translate(0, 25)")
+				.attr("transform", "translate(0, 42)")
 				.attr("fill", "none")
 				.attr("stroke", "#444")
 				.attr("stroke-width", ".04em")
