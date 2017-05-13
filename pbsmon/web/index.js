@@ -17,22 +17,22 @@ function jobsbyhostname(jobs, hostname) {
 	});
 }	
 
+var usermap = {}
+var usermapsize = 0;
 var jobcolor = function() {
-	var map = {};
-	var mapsize = 0;
 	var scale = d3.scaleOrdinal(d3.schemeCategory20);
 	return function(job) {
 		var i = -1;
 		var usr = job["user"];
-		if (usr in map) {
-			i = map[usr];
+		if (usr in usermap) {
+			i = usermap[usr];
 		} else {
-			i = mapsize++;
-			map[usr] = i;
+			i = usermapsize++;
+			usermap[usr] = i;
 		}
 		var color = d3.color(scale(i))
 		if (job["resources_used.cpupercent"]/job["resources_used.ncpus"] < 50) {
-			color.opacity = .7;
+			color = color.brighter(.4);
 		}
 		return color.rgb();
 	}
@@ -85,28 +85,71 @@ function memratio(node) {
 	return ratio;
 }
 
-function serversgraph(nodes, jobs) {
-	var nds = d3.select("body")
-		.selectAll("svg")
-		.data(nodes)
-		.enter().append("svg")
-			.attr("height", 145)
-			.attr("width", 103);
-	
-	nds.call(jobtip);
-	nds.call(memtip);
+function addjobcores(job) {
+	var exec_host = job["exec_host"];
+	var hosts = exec_host.split('+');
+	for (h in hosts) {
+		var hsplit = h.split('/');
+		var hostname = hsplit[0];
+		var coressplit = hsplit[1].split('*');
+		coressplit[1] = coressplit[1] || coressplit[0];
 
-	nds.append("text")
+		var cores = d3.range(coressplit[0], coressplit[1]);
+		var j = d3.select("." + hostname)
+			.append("g")
+				.attr("class", "job")
+				.attr("transform", "translate(0, 42)")
+				.attr("stroke", "#444")
+				.attr("stroke-width", ".04em")
+				.attr("fill", jobcolor(job))
+			.on("mouseover", function(jb) {
+				d3.select(this).attr("fill", d3.color(jobcolor(job)).brighter());
+				jobtip.show(jb);
+			})
+			.on("mouseout", function(jb) {
+				d3.select(this).attr("fill", jobcolor(job))
+				jobtip.hide(jb);
+			})
+			;
+		j.selectAll("rect")
+			.data(cores)
+			.enter().append("rect")
+				.attr("width", 25)
+				.attr("height", 25)
+				.attr("x", function(d) { return (d % 4) * 25; })
+				.attr("y", function(d) { return d * 25; })
+			;
+	}
+}
+
+function serversgraph(nodes, jobs) {
+	var body = d3.select("body");
+	var nds = body
+		.selectAll("svg.node")
+		.data(nodes, function key(n){return n["hostname"];})
+		;
+	
+	nds.enter().append("svg")
+			.attr("class", "node")
+			.attr("height", 145)
+			.attr("width", 103)
+		.append("text")
 			.attr("x", 5)
 			.attr("y", 20)
 			.attr("stroke", "#444")
 		.text(function(d){ return d["hostname"]; });
+		;
 	
-	// memory bars
-	nds.append("g")
+	nds.exit().remove();
+	
+	// update memory bars
+	nds.select(".memory rect")
+		.attr("width", function (d) { console.log(d); return 100*memratio(d); })
+		;
+	// createe memory bars
+	nds.enter().selectAll(".node").append("g")
 			.attr("class", "memory")
 			.attr("transform", "translate(0, 25)")
-			.attr("fill", "pink")
 		.append("rect")
 			.attr("x", 0)
 			.attr("y", 0)
@@ -117,13 +160,14 @@ function serversgraph(nodes, jobs) {
 		.on("mouseout", memtip.hide)
 		;
 	
-	nds.each(function(n) {
-		//d3.select(this).call(jobtip);
-
+	d3.selectAll(".node").each(function(n) {
+		d3.select(this).call(memtip);
+		d3.select(this).call(jobtip);
 		var jbs = d3.select(this)
 			.selectAll("g.job")
-			.data(jobsbyhostname(jobs, n["hostname"]))
-			.enter().append("g")
+			.data(jobsbyhostname(jobs, n["hostname"]), function key(j){ return j["id"]; });
+
+		jbs.enter().append("g")
 				.attr("class", "job")
 				.attr("transform", "translate(0, 42)")
 				.attr("stroke", "#444")
@@ -140,15 +184,17 @@ function serversgraph(nodes, jobs) {
 			;
 		jbs.exit().remove();
 
+		// draw all cpus every time
 		counter = 0
-		jbs.selectAll("rect")
+		d3.select(this).selectAll(".job").selectAll("rect").remove();
+		var cores = d3.select(this).selectAll(".job").selectAll("rect")
 			.data(function (d) { var prev = counter; counter += (d["resources_used.ncpus"] || 0); return d3.range(prev, counter); })
-			.enter().append("rect")
+			;
+		cores.enter().append("rect")
 				.attr("width", 25)
 				.attr("height", 25)
 				.attr("x", function(d) { return ((counter-d-1) % 4) * 25; })
 				.attr("y", function(d) { return Math.floor((counter-d-1)/4) * 25; })
-			.exit().remove()
 			;
 
 		// add the not used cores

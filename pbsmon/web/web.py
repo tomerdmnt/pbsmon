@@ -25,15 +25,17 @@ class S(BaseHTTPRequestHandler):
 		self.send_header('Content-type', contenttype)
 		self.end_headers()
 	
-	def do_GET(self):
-		if self.path == '/':
-			self._set_headers('text/html')
-			ifd = open(PATH + '/index.html', 'r')
-			data = ifd.read()
+	def _serve_file(self, file, contenttype):
+		self._set_headers(contenttype)
+		with open(PATH + file, 'r') as f:
+			data = f.read(2048)
 			while data:
 				self.wfile.write(data)
-				data = ifd.read()
-			ifd.close()
+				data = f.read(2048)
+	
+	def do_GET(self):
+		if self.path == '/':
+			self._serve_file('/index.html', 'text/html')
 		elif self.path == '/jobs.json':
 			self._set_headers('application/json')
 			jobs = getjobs(getCluster())
@@ -42,43 +44,14 @@ class S(BaseHTTPRequestHandler):
 			self._set_headers('application/json')
 			nodes = getnodes(getCluster())
 			json.dump(nodes, self.wfile, default=lambda o: o.__str__())
-#		elif self.path == '/jobs.json':
-#			self._set_headers('application/json')
-#			ifd = open(PATH + '/jobs.json', 'r')
-#			data = ifd.read()
-#			while data:
-#				self.wfile.write(data)
-#				data = ifd.read()
-#			ifd.close()
-#		elif self.path == '/nodes.json':
-#			self._set_headers('application/json')
-#			ifd = open(PATH + '/nodes.json', 'r')
-#			data = ifd.read()
-#			while data:
-#				self.wfile.write(data)
-#				data = ifd.read()
-#			ifd.close()
 		elif self.path == '/index.js':
-			self._set_headers('text/javascript')
-			ifd = open(PATH + '/index.js', 'r')
-			data = ifd.read()
-			while data:
-				self.wfile.write(data)
-				data = ifd.read()
-			ifd.close()
+			self._serve_file('/index.js', 'text/javascript')
 		elif self.path == '/style.css':
-			self._set_headers('text/css')
-			ifd = open(PATH + '/style.css', 'r')
-			data = ifd.read()
-			while data:
-				self.wfile.write(data)
-				data = ifd.read()
-			ifd.close()
+			self._serve_file('/style.css', 'text/css')
+		else:
+			self.send_response(404)
+			self.end_headers()
 
-	def do_POST(self):
-		# Doesn't do anything with posted data
-		self._set_headers()
-		self.wfile.write("<html><body><h1>POST!</h1></body></html>")
 
 def run(cluster, server_class=HTTPServer, handler_class=S, port=0):
 	server_address = ('', port)
