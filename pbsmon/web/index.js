@@ -143,9 +143,22 @@ function serversgraph(nodes, jobs) {
 				.attr("fill", function (d) { return jobcolor(d); })
 			.on("mouseover", function(jb) {
 				d3.select(this).attr("fill", function (d) { return d3.color(jobcolor(d)).brighter(.6); });
+				var dright = window.innerWidth - d3.event.clientX;
+				var dleft = d3.event.clientX;
+				var ddown = window.innerHeight - d3.event.clientY;
+				var dup = d3.event.clientY;
 				var we = 'e'; var ns = 's';
-				if (d3.clientX > 500) we = 'e';
-				if (d3.clientY > 500) ns = 'n';
+				if (ddown < 120) {
+					ns = 'n';
+					if (dup < 120)
+						ns = '';
+				}
+				if (dright < 120) {
+					we = 'w';
+					if (dleft < 120)
+						we = '';
+				}
+				if (ns === '' && we === '') ns = 's';
 				jobtip.direction(ns+we).show(jb);
 			})
 			.on("mouseout", function(jb) {
