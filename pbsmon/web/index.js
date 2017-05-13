@@ -38,6 +38,17 @@ var jobcolor = function() {
 	}
 }();
 
+var nodetip = d3.tip().attr("class", "d3-tip")
+	.attr("class", "d3-tip")
+	.offset([-5, 0])
+	.html(function (d) {
+		return "<div>" + 
+			"State: " + d["state"] + "<br/>" +
+			"Qlist: " + (d["resources_available.qlist"]||[]).join(', ') +
+			"</div>";
+	})
+	.direction("n");
+
 var jobtip = d3.tip().attr("class", "d3-tip")
 	.attr("class", "d3-tip")
 	.offset([15, 5])
@@ -57,7 +68,7 @@ var jobtip = d3.tip().attr("class", "d3-tip")
 
 var memtip = d3.tip()
 	.attr("class", "d3-tip")
-	.offset([-20, 0])
+	.offset([-15, 0])
 	.html(function (d) {
 		var avail = d["resources_available.mem"];
 		var used = d["resources_assigned.mem"];
@@ -100,7 +111,9 @@ function serversgraph(nodes, jobs) {
 			.attr("x", 5)
 			.attr("y", 20)
 			.attr("stroke", "#444")
-		.text(function(d){ return d["hostname"]; });
+		.text(function(d){ return d["hostname"]; })
+		.on("mouseover", nodetip.show)
+		.on("mouseout", nodetip.hide)
 		;
 	
 	nds.exit().remove();
@@ -132,6 +145,8 @@ function serversgraph(nodes, jobs) {
 	d3.selectAll(".node").each(function(n) {
 		d3.select(this).call(memtip);
 		d3.select(this).call(jobtip);
+		d3.select(this).call(nodetip);
+
 		var jbs = d3.select(this)
 			.selectAll("g.job")
 			.data(jobsbyhostname(jobs, n["hostname"]), function key(j){ return j["id"]; });
@@ -148,14 +163,14 @@ function serversgraph(nodes, jobs) {
 				var ddown = window.innerHeight - d3.event.clientY;
 				var dup = d3.event.clientY;
 				var we = 'e'; var ns = 's';
-				if (ddown < 120) {
+				if (ddown < 300) {
 					ns = 'n';
-					if (dup < 120)
+					if (dup < 300)
 						ns = '';
 				}
-				if (dright < 120) {
+				if (dright < 300) {
 					we = 'w';
-					if (dleft < 120)
+					if (dleft < 300)
 						we = '';
 				}
 				if (ns === '' && we === '') ns = 's';
