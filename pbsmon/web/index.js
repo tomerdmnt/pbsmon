@@ -144,8 +144,8 @@ function serversgraph(nodes, jobs) {
 			.on("mouseover", function(jb) {
 				d3.select(this).attr("fill", function (d) { return d3.color(jobcolor(d)).brighter(.6); });
 				var we = 'e'; var ns = 's';
-				if (d3.clientX > 1000) we = 'e';
-				if (d3.clientY > 1000) ns = 'n';
+				if (d3.clientX > 500) we = 'e';
+				if (d3.clientY > 500) ns = 'n';
 				jobtip.direction(ns+we).show(jb);
 			})
 			.on("mouseout", function(jb) {
