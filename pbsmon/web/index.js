@@ -85,43 +85,6 @@ function memratio(node) {
 	return ratio;
 }
 
-function addjobcores(job) {
-	var exec_host = job["exec_host"];
-	var hosts = exec_host.split('+');
-	for (h in hosts) {
-		var hsplit = h.split('/');
-		var hostname = hsplit[0];
-		var coressplit = hsplit[1].split('*');
-		coressplit[1] = coressplit[1] || coressplit[0];
-
-		var cores = d3.range(coressplit[0], coressplit[1]);
-		var j = d3.select("." + hostname)
-			.append("g")
-				.attr("class", "job")
-				.attr("transform", "translate(0, 42)")
-				.attr("stroke", "#444")
-				.attr("stroke-width", ".04em")
-				.attr("fill", jobcolor(job))
-			.on("mouseover", function(jb) {
-				d3.select(this).attr("fill", d3.color(jobcolor(job)).brighter());
-				jobtip.show(jb);
-			})
-			.on("mouseout", function(jb) {
-				d3.select(this).attr("fill", jobcolor(job))
-				jobtip.hide(jb);
-			})
-			;
-		j.selectAll("rect")
-			.data(cores)
-			.enter().append("rect")
-				.attr("width", 25)
-				.attr("height", 25)
-				.attr("x", function(d) { return (d % 4) * 25; })
-				.attr("y", function(d) { return d * 25; })
-			;
-	}
-}
-
 function serversgraph(nodes, jobs) {
 	var body = d3.select("body");
 	var nds = body
@@ -170,8 +133,7 @@ function serversgraph(nodes, jobs) {
 		jbs.enter().append("g")
 				.attr("class", "job")
 				.attr("transform", "translate(0, 42)")
-				.attr("stroke", "#444")
-				.attr("stroke-width", ".04em")
+				.attr("stroke", "none")
 				.attr("fill", function (d) { return jobcolor(d); })
 			.on("mouseover", function(jb) {
 				d3.select(this).attr("fill", function (d) { return d3.color(jobcolor(d)).brighter(); });
@@ -199,10 +161,10 @@ function serversgraph(nodes, jobs) {
 
 		// add the not used cores
 		d3.select(this)
-			.selectAll("rect.unused")
-			.data(d3.range(n["resources_assigned.ncpus"], n["resources_available.ncpus"]))
+			.selectAll("rect.cpus")
+			.data(d3.range(0, n["resources_available.ncpus"]))
 			.enter().append("rect")
-				.attr("class", "unused")
+				.attr("class", "cpus")
 				.attr("transform", "translate(0, 42)")
 				.attr("fill", "none")
 				.attr("stroke", "#444")
