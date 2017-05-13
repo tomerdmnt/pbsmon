@@ -30,7 +30,7 @@ var jobcolor = function() {
 			i = usermapsize++;
 			usermap[usr] = i;
 		}
-		var color = d3.color(scale(i))
+		var color = d3.color(scale(i)).darker(.2);
 		if (job["resources_used.cpupercent"]/job["resources_used.ncpus"] < 50) {
 			color = color.brighter(.4);
 		}
@@ -119,8 +119,14 @@ function serversgraph(nodes, jobs) {
 			.attr("width", function (d) { return 100*memratio(d); })
 			.attr("height", 15)
 			.attr("fill", "red")
-		.on("mouseover", memtip.show)
-		.on("mouseout", memtip.hide)
+		.on("mouseover", function(n){
+			d3.select(this).attr("fill", d3.color("red").darker(.6));
+			memtip.show(n);
+		})
+		.on("mouseout", function(n){
+			d3.select(this).attr("fill", "red");
+			memtip.hide(n);
+		})
 		;
 	
 	d3.selectAll(".node").each(function(n) {
@@ -136,8 +142,11 @@ function serversgraph(nodes, jobs) {
 				.attr("stroke", "none")
 				.attr("fill", function (d) { return jobcolor(d); })
 			.on("mouseover", function(jb) {
-				d3.select(this).attr("fill", function (d) { return d3.color(jobcolor(d)).brighter(); });
-				jobtip.show(jb);
+				d3.select(this).attr("fill", function (d) { return d3.color(jobcolor(d)).brighter(.6); });
+				var we = 'e'; var ns = 's';
+				if (d3.clientX > 1000) we = 'e';
+				if (d3.clientY > 1000) ns = 'n';
+				jobtip.direction(ns+we).show(jb);
 			})
 			.on("mouseout", function(jb) {
 				d3.select(this).attr("fill", function (d) { return jobcolor(d); })
