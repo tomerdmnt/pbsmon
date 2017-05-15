@@ -33,7 +33,7 @@ def filecache():
 	return __globals.filecache
 
 def cachefile(file):
-	with open(PATH + file, 'r') as f:
+	with open(PATH + file, 'rb') as f:
 		__globals.filecache[file] = f.read()
 
 def set_interval(func, sec):
@@ -56,7 +56,7 @@ class S(BaseHTTPRequestHandler):
 		if file in filecache():
 			self.wfile.write(filecache()[file])
 		else: 
-			with open(PATH + file, 'r') as f:
+			with open(PATH + file, 'rb') as f:
 				data = f.read(2048)
 				while data:
 					self.wfile.write(data)

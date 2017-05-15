@@ -298,7 +298,6 @@ def _main():
 	web_parser = subparsers.add_parser('web', help="web monitor",
 						description=web_description)
 	web_parser.add_argument('cluster', help='cluster name (i.e. tamir-short)', nargs='?')
-	web_parser.add_argument('port', help='cluster name (i.e. tamir-short)', nargs='?')
 	web_parser.add_argument('-p', '--port', type=int, dest='port', default=0, help='server listening port')
 	web_parser.set_defaults(func=_web_cmd)
 
