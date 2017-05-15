@@ -16,20 +16,32 @@ __globals.cluster = None
 __globals.filecache = {}
 
 def cachejobs():
+	print("caching jobs")
 	__globals.jobs = getjobs(__globals.cluster)
 
+def jobs():
+	return __globals.jobs
+
 def cachenodes():
+	print("caching nodes")
 	__globals.nodes = getnodes(__globals.cluster)
+
+def nodes():
+	return __globals.nodes
+
+def filecache():
+	return __globals.filecache
 
 def cachefile(file):
 	with open(PATH + file, 'r') as f:
-		__globals.filecache[file] = f.readall()
+		__globals.filecache[file] = f.read()
 
 def set_interval(func, sec):
 	def func_wrapper():
 		set_interval(func, sec)
 		func()
 	t = threading.Timer(sec, func_wrapper)
+	t.daemon = True
 	t.start()
 	return t
 
@@ -41,8 +53,8 @@ class S(BaseHTTPRequestHandler):
 
 	def _serve_file(self, file, contenttype):
 		self._set_headers(contenttype)
-		if file in __globals.filecache:
-			self.wfile.write(__globals.filecache[file])
+		if file in filecache():
+			self.wfile.write(filecache()[file])
 		else: 
 			with open(PATH + file, 'r') as f:
 				data = f.read(2048)
@@ -70,10 +82,10 @@ class S(BaseHTTPRequestHandler):
 			self._serve_file('/index.html', 'text/html')
 		elif self.path == '/jobs.json':
 			self._set_headers('application/json')
-			json.dump(__globals.nodes, self.wfile, default=lambda o: o.__str__())
+			json.dump(jobs(), self.wfile, default=lambda o: o.__str__())
 		elif self.path == '/nodes.json':
 			self._set_headers('application/json')
-			json.dump(__globals.nodes, self.wfile, default=lambda o: o.__str__())
+			json.dump(nodes(), self.wfile, default=lambda o: o.__str__())
 		elif self.path == '/index.js':
 			self._serve_file('/index.js', 'text/javascript')
 		elif self.path == '/style.css':
@@ -100,4 +112,4 @@ def run(cluster, server_class=HTTPServer, handler_class=S, port=0):
 	httpd.serve_forever()
 
 if __name__ == "__main__":
-	run()
+	run(None)
