@@ -49,6 +49,21 @@ class S(BaseHTTPRequestHandler):
 				while data:
 					self.wfile.write(data)
 					data = f.read(2048)
+	
+	def do_HEAD(self):
+		if self.path == '/':
+			self._set_headers('text/html')
+		elif self.path == '/jobs.json':
+			self._set_headers('application/json')
+		elif self.path == '/nodes.json':
+			self._set_headers('application/json')
+		elif self.path == '/index.js':
+			self._set_headers('text/javascript')
+		elif self.path == '/style.css':
+			self._set_headers('text/css')
+		else:
+			self.send_response(404)
+			self.end_headers()
 
 	def do_GET(self):
 		if self.path == '/':
