@@ -225,5 +225,5 @@ function showgraph() {
 
 window.onload = function(e) {
 	showgraph();
-	setInterval(showgraph, 180000);
+	setInterval(showgraph, 120000);
 }
