@@ -5,8 +5,16 @@ import os, sys
 from pbsmon import getjobs
 from pbsmon import getnodes
 import threading
+import StringIO
+import gzip
 
 PATH = os.path.dirname(os.path.abspath(__file__))
+
+def gzipcompress(data):
+	out = StringIO.StringIO()
+	with gzip.GzipFile(fileobj=out, mode="wb") as f:
+		f.write(data)
+	return out.getvalue()
 
 class _globals:
     pass
@@ -17,14 +25,14 @@ __globals.filecache = {}
 
 def cachejobs():
 	print("caching jobs")
-	__globals.jobs = getjobs(__globals.cluster)
+	__globals.jobs = gzipcompress(json.dumps(getjobs(__globals.cluster), default=lambda o: o.__str__()))
 
 def jobs():
 	return __globals.jobs
 
 def cachenodes():
 	print("caching nodes")
-	__globals.nodes = getnodes(__globals.cluster)
+	__globals.nodes = gzipcompress(json.dumps(getnodes(__globals.cluster), default=lambda o: o.__str__()))
 
 def nodes():
 	return __globals.nodes
@@ -34,7 +42,7 @@ def filecache():
 
 def cachefile(file):
 	with open(PATH + file, 'rb') as f:
-		__globals.filecache[file] = f.read()
+		__globals.filecache[file] = gzipcompress(f.read())
 
 def set_interval(func, sec):
 	def func_wrapper():
@@ -49,6 +57,7 @@ class S(BaseHTTPRequestHandler):
 	def _set_headers(self, contenttype='text/html'):
 		self.send_response(200)
 		self.send_header('Content-type', contenttype)
+		self.send_header('Content-Encoding', 'gzip')
 		self.end_headers()
 
 	def _serve_file(self, file, contenttype):
@@ -82,10 +91,10 @@ class S(BaseHTTPRequestHandler):
 			self._serve_file('/index.html', 'text/html')
 		elif self.path == '/jobs.json':
 			self._set_headers('application/json')
-			json.dump(jobs(), self.wfile, default=lambda o: o.__str__())
+			self.wfile.write(jobs())
 		elif self.path == '/nodes.json':
 			self._set_headers('application/json')
-			json.dump(nodes(), self.wfile, default=lambda o: o.__str__())
+			self.wfile.write(nodes())
 		elif self.path == '/index.js':
 			self._serve_file('/index.js', 'text/javascript')
 		elif self.path == '/style.css':
@@ -93,6 +102,7 @@ class S(BaseHTTPRequestHandler):
 		else:
 			self.send_response(404)
 			self.end_headers()
+		self.finish()
 
 
 def run(cluster, server_class=HTTPServer, handler_class=S, port=0):

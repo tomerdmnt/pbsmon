@@ -197,6 +197,7 @@ function serversgraph(nodes, jobs) {
 			;
 
 		// add the not used cores
+		d3.select(this).selectAll("rect.cpus").remove();
 		d3.select(this)
 			.selectAll("rect.cpus")
 			.data(d3.range(0, n["resources_available.ncpus"]))
