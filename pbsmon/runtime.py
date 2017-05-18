@@ -5,10 +5,12 @@ from job import getjobs
 jobsbyexe = {}
 stats = {}
 
-def check_ended_jobs(cluster, user):
+def check_ended_jobs(cluster, user, no_stdin):
 	jobs = getjobs(cluster)
 	if user:
 		jobs = [j for j in jobs if j.get('user') == user]
+	if no_stdin:
+		jobs = [j for j in jobs if j.get('job_name') != 'STDIN']
 	# switch running flag off
 	for k, v in jobsbyexe.items():
 		for jid, job in v.items():
@@ -58,7 +60,7 @@ def isoutlier(data, x, k=1.5):
 		return True
 	return False
 
-def outliers(cluster, user=None, k=1.5):
+def outliers(cluster, user=None, k=1.5, no_stdin=True):
 	while True:
 		for j in check_ended_jobs(cluster, user):
 			addstat(j)

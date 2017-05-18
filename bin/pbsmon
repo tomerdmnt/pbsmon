@@ -116,6 +116,8 @@ def _cputime_low_cmd(args):
 		walltime = j.get('resources_used.walltime')
 		cputime  = j.get('resources_used.cput')
 		if state == 'R' and walltime.total_seconds() > 120:
+			if args.no_stdin and j["job_name"] == "STDIN":
+				continue
 			if (cputime.total_seconds()/walltime.total_seconds()) < args.k:
 				print("{0:<30} {1:>15} / {2:<15}".format(
 					j.get('id'),
@@ -123,7 +125,7 @@ def _cputime_low_cmd(args):
 					timedelta_str(walltime)))
 
 def _runtime_cmd(args):
-	for job, stats in runtime.outliers(args.cluster, args.user, args.k):
+	for job, stats in runtime.outliers(args.cluster, args.user, args.k, args.no_stdin):
 		if job == None:
 			time.sleep(60)
 			continue
@@ -251,6 +253,7 @@ def _main():
 						description=cputime_low_description)
 	cputime_low_parser.add_argument('cluster', help='cluster name (i.e. tamir-short)', default='', nargs='?')
 	cputime_low_parser.add_argument('-k', type=float, dest='k', default=.5, help='minimum utilization ratio (default: .5)')
+	cputime_low_parser.add_argument('-n', '--no-stdin', action='store_true', dest='no_stdin', help='filter out STDIN jobs')
 	cputime_low_parser.set_defaults(func=_cputime_low_cmd)
 
 	cputime_low_parser._positionals.title = 'arguments'
@@ -265,6 +268,7 @@ def _main():
 	runtime_parser.add_argument('cluster', help='cluster name (i.e. tamir-short)', default='', nargs='?')
 	runtime_parser.add_argument('-u', '--user', type=str, dest='user', help='jobs by username')
 	runtime_parser.add_argument('-k', type=float, dest='k', default=1.5, help='outlier detection constant (default: 1.5)')
+	runtime_parser.add_argument('-n', '--no-stdin', action='store_true', dest='no_stdin', help='filter out STDIN jobs')
 	runtime_parser.set_defaults(func=_runtime_cmd)
 
 	runtime_parser._positionals.title = 'arguments'
