@@ -58,7 +58,7 @@ var jobtip = d3.tip().attr("class", "d3-tip")
 			"Id: " + d["id"] + "<br />" +
 			"CPU Time: " + d["resources_used.cput"] + " / " + d["resource_list.cput"] + "<br />" +
 			"Wall Time: " + d["resources_used.walltime"] + " / " + d["resource_list.walltime"] + "<br />" +
-			"CPU: " + d["resources_used.cpupercent"] + "%" + " of " + d["resources_used.ncpus"] + " cores" + "</br />"
+			"CPU: " + d["resources_used.cpupercent"] + "%" + " of " + d["resources_used.ncpus"] + " cores" + "</br />" +
 			"Memory: " + d["resources_used.mem"] + " / " + d["resource_list.mem"] + "<br />" +
 			"Virtual Memory: " + d["resources_used.vmem"] + " / " + d["resource_list.vmem"] + "<br />" +
 			"Physical Memory: " + d["resources_used.pmem"] + " / " + d["resource_list.pmem"] + "<br />" +
@@ -115,14 +115,14 @@ function serversgraph(nodes, jobs) {
 		.on("mouseover", nodetip.show)
 		.on("mouseout", nodetip.hide)
 		;
-	
+
 	nds.exit().remove();
-	
+
 	// update memory bars
 	nds.select(".memory rect")
 		.attr("width", function (d) { console.log(d); return 100*memratio(d); })
 		;
-	// createe memory bars
+	// create memory bars
 	nds.enter().selectAll(".node").append("g")
 			.attr("class", "memory")
 			.attr("transform", "translate(0, 25)")
