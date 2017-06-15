@@ -7,6 +7,7 @@ from datetime import timedelta
 from sets import Set
 import runtime
 import traceback
+from checknfs import checknfs
 
 # configuration
 SLEEP_TIME = 60*10
@@ -100,7 +101,8 @@ def run(cluster, alertfn):
 					checkmemabuse(n, jobs, alertfn)
 			checkcput(jobs, alertfn)
 			#checkofflinenodes()
-			#checkdisktamir1()
+			if checknfs('/tamir1') == False:
+				alertfn("system", "/tamir1 is stale or unmounted")
 			checkoutliers(cluster, alertfn)
 			checkclusters(alertfn)
 
