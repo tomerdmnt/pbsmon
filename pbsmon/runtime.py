@@ -62,7 +62,7 @@ def isoutlier(data, x, k=1.5):
 
 def outliers(cluster, user=None, k=1.5, no_stdin=True):
 	while True:
-		for j in check_ended_jobs(cluster, user):
+		for j in check_ended_jobs(cluster, user, no_stdin):
 			addstat(j)
 			jobname = j.get('job_name')
 			if isoutlier(stats.get(jobname), j.get('resources_used.walltime'), k):
