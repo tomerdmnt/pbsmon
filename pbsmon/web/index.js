@@ -105,19 +105,19 @@ function serversgraph(nodes, jobs) {
 	
 	// create nodes with title text
 	nds.enter().append("svg")
-			.attr("class", "node")
+			.attr("class", function(d) {
+				if (d["state"].includes("down"))
+					return "node down";
+				else
+					return "node";
+			})
 			.attr("height", 145)
 			.attr("width", 103)
 		.append("text")
 			.attr("x", 5)
 			.attr("y", 20)
 			.attr("stroke", "#444")
-		.html(function(d){
-			if (d["state"].includes("down"))
-				return "<strike>" d["hostname"] + "</strike>";
-			else
-				return d["hostname"];
-		})
+		.text(function(d){ return d["hostname"]; })
 		.on("mouseover", nodetip.show)
 		.on("mouseout", nodetip.hide)
 		;

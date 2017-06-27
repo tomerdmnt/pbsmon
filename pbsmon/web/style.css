@@ -58,3 +58,7 @@ html, body {
   top: 50%;
   left: 100%;
 }
+
+.node.down text {
+	text-decoration: line-through;
+}
