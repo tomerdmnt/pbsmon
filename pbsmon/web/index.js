@@ -103,6 +103,7 @@ function serversgraph(nodes, jobs) {
 		.data(nodes, function key(n){return n["hostname"];})
 		;
 	
+	// create nodes with title text
 	nds.enter().append("svg")
 			.attr("class", "node")
 			.attr("height", 145)
@@ -111,7 +112,12 @@ function serversgraph(nodes, jobs) {
 			.attr("x", 5)
 			.attr("y", 20)
 			.attr("stroke", "#444")
-		.text(function(d){ return d["hostname"]; })
+		.html(function(d){
+			if (d["state"].includes("down"))
+				return "<strike>" d["hostname"] + "</strike>";
+			else
+				return d["hostname"];
+		})
 		.on("mouseover", nodetip.show)
 		.on("mouseout", nodetip.hide)
 		;
