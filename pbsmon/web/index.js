@@ -157,7 +157,7 @@ function serversgraph(nodes, jobs) {
 			.selectAll("g.job")
 			.data(jobsbyhostname(jobs, n["hostname"]), function key(j){ return j["id"]; });
 
-		jbs.enter().append("g")
+		var jbs_g = jbs.enter().append("g")
 				.attr("class", "job")
 				.attr("transform", "translate(0, 42)")
 				.attr("stroke", "none")
@@ -202,6 +202,15 @@ function serversgraph(nodes, jobs) {
 				.attr("x", function(d) { return ((counter-d-1) % 4) * 25; })
 				.attr("y", function(d) { return Math.floor((counter-d-1)/4) * 25; })
 			;
+		// STDIN jobs S tags
+		jbs_g.append("text")
+				.attr("stroke", "white")
+				.attr("fill", "black")
+				.attr("x", 16)
+				.attr("y", 21)
+				.attr("font-size", "10px")
+				.attr("style", "font-weight: lighter;")
+			.text(function(d) { return (d["job_name"] == "STDIN") ? "S" : ""; })
 
 		// add the not used cores
 		d3.select(this).selectAll("rect.cpus").remove();
