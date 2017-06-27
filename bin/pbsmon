@@ -11,6 +11,7 @@ from pbsmon import runtime
 from pbsmon import Size
 from pbsmon import monitor
 from pbsmon import web
+from pbsmon import checknfs
 
 def _ls_cmd(args):
 	if args.cluster:
@@ -179,6 +180,11 @@ def _monitor_cmd(args):
 def _web_cmd(args):
 	web.run(args.cluster, port=args.port)
 
+def _checknfs_cmd(args):
+	if checknfs(args.dir) == True:
+		print("%s is up" % args.dir)
+	else:
+		print("%s is down" % args.dir)
 			
 def _main():
 	# command arguments parsers
@@ -307,6 +313,17 @@ def _main():
 
 	web_parser._positionals.title = 'arguments'
 	web_parser._optionals.title = 'flags'
+
+	# checknfs sub command
+	checknfs_description="""check an nfs mount is up"""
+
+	checknfs_parser = subparsers.add_parser('checknfs', help="check an nfs mount is up",
+						description=checknfs_description)
+	checknfs_parser.add_argument('dir', help='mount directory, i.e. /tamir1')
+	checknfs_parser.set_defaults(func=_checknfs_cmd)
+
+	checknfs_parser._positionals.title = 'arguments'
+	checknfs_parser._optionals.title = 'flags'
 
 	# print help when no arguments supplied
 	if len(sys.argv) == 1:
