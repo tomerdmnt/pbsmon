@@ -120,10 +120,11 @@ def _cputime_low_cmd(args):
 			if args.no_stdin and j["job_name"] == "STDIN":
 				continue
 			if (cputime.total_seconds()/walltime.total_seconds()) < args.k:
-				print("{0:<30} {1:>15} / {2:<15}".format(
+				print("{0:<30} {1:>15} / {2:<15} {3:<10}".format(
 					j.get('id'),
 					timedelta_str(cputime),
-					timedelta_str(walltime)))
+					timedelta_str(walltime),
+					j.get('user')))
 
 def _runtime_cmd(args):
 	for job, stats in runtime.outliers(args.cluster, args.user, args.k, args.no_stdin):
