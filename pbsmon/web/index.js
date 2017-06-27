@@ -162,6 +162,7 @@ function serversgraph(nodes, jobs) {
 				.attr("transform", "translate(0, 42)")
 				.attr("stroke", "none")
 				.attr("fill", function (d) { return jobcolor(d); })
+				.attr("data-clipboard-text", function(d) { return d["id"]; })
 			.on("mouseover", function(jb) {
 				d3.select(this).attr("fill", function (d) { return d3.color(jobcolor(d)).brighter(.6); });
 				var dright = window.innerWidth - d3.event.clientX;
@@ -226,6 +227,7 @@ function showgraph() {
 	d3.json("/jobs.json", function(jobs) {
 		d3.json("nodes.json", function(nodes) {
 			serversgraph(nodes, jobs);
+			new Clipboard(".job");
 		});
 	});
 }
