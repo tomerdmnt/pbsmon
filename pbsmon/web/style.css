@@ -59,6 +59,14 @@ html, body {
   left: 100%;
 }
 
+.tip-text span {
+	font-weight: lighter;
+	font-size: .9em;
+	width: 5.2em;
+	margin-bottom: .3em;
+	display: inline-block;
+}
+
 .node.down text {
 	text-decoration: line-through;
 }

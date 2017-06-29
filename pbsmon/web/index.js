@@ -42,9 +42,9 @@ var nodetip = d3.tip().attr("class", "d3-tip")
 	.attr("class", "d3-tip")
 	.offset([-5, 0])
 	.html(function (d) {
-		return "<div>" + 
-			"State: " + d["state"] + "<br/>" +
-			"Qlist: " + (d["resources_available.qlist"]||[]).join(', ') +
+		return '<div class="tip-text">' + 
+			"<span>State:</span>" + d["state"] + "<br/>" +
+			"<span>Qlist:</span>" + (d["resources_available.qlist"]||[]).join(', ') +
 			"</div>";
 	})
 	.direction("n");
@@ -53,15 +53,15 @@ var jobtip = d3.tip().attr("class", "d3-tip")
 	.attr("class", "d3-tip")
 	.offset([15, 5])
 	.html(function (d) {
-		return "<div>" + 
-			"User: " + d["user"] + "<br />" +
-			"Id: " + d["id"] + "<br />" +
-			"CPU Time: " + d["resources_used.cput"] + " / " + d["resource_list.cput"] + "<br />" +
-			"Wall Time: " + d["resources_used.walltime"] + " / " + d["resource_list.walltime"] + "<br />" +
-			"CPU: " + d["resources_used.cpupercent"] + "%" + " of " + d["resources_used.ncpus"] + " cores" + "</br />" +
-			"Memory: " + d["resources_used.mem"] + " / " + d["resource_list.mem"] + "<br />" +
-			"Virtual Memory: " + d["resources_used.vmem"] + " / " + d["resource_list.vmem"] + "<br />" +
-			"Physical Memory: " + d["resources_used.pmem"] + " / " + d["resource_list.pmem"] + "<br />" +
+		return '<div class="tip-text">' + 
+			"<span>User:</span>" + d["user"] + "<br />" +
+			"<span>Id:</span>" + d["id"] + "<br />" +
+			"<span>CPU Time:</span>" + d["resources_used.cput"] + " / " + d["resource_list.cput"] + "<br />" +
+			"<span>Wall Time:</span>" + d["resources_used.walltime"] + " / " + d["resource_list.walltime"] + "<br />" +
+			"<span>CPU:</span>" + d["resources_used.cpupercent"] + "%" + " of " + d["resources_used.ncpus"] + " cores" + "</br />" +
+			"<span>Memory:</span>" + d["resources_used.mem"] + " / " + d["resource_list.mem"] + "<br />" +
+			"<span>Virtual Memory:</span>" + d["resources_used.vmem"] + " / " + d["resource_list.vmem"] + "<br />" +
+			"<span>Physical Memory:</span>" + d["resources_used.pmem"] + " / " + d["resource_list.pmem"] + "<br />" +
 			"</div>";
 	})
 	.direction("se");
@@ -97,8 +97,8 @@ function memratio(node) {
 }
 
 function serversgraph(nodes, jobs) {
-	var body = d3.select("body");
-	var nds = body
+	var running = d3.select(".running");
+	var nds = running
 		.selectAll("svg.node")
 		.data(nodes, function key(n){return n["hostname"];})
 		;
@@ -112,7 +112,13 @@ function serversgraph(nodes, jobs) {
 					return "node";
 			})
 			.attr("height", 145)
-			.attr("width", 103)
+			.attr("width", function(d){
+				var x = d["resources_available.ncpus"]/4;
+				x = Math.ceil(x);
+				x = Math.max(x, 4);
+				d["cpuperrow"] = x;
+				return x*25 + 5;
+			})
 		.append("text")
 			.attr("x", 5)
 			.attr("y", 20)
@@ -135,7 +141,7 @@ function serversgraph(nodes, jobs) {
 		.append("rect")
 			.attr("x", 0)
 			.attr("y", 0)
-			.attr("width", function (d) { return 100*memratio(d); })
+			.attr("width", function (d) { return d["cpuperrow"]*25*memratio(d); })
 			.attr("height", 15)
 			.attr("fill", "red")
 		.on("mouseover", function(n){
@@ -153,12 +159,17 @@ function serversgraph(nodes, jobs) {
 		d3.select(this).call(jobtip);
 		d3.select(this).call(nodetip);
 
+		var x = n["resources_available.ncpus"]/4;
+		x = Math.ceil(x);
+		x = Math.max(x, 4);
+		n["cpuperrow"] = x;
+
 		var jbs = d3.select(this)
 			.selectAll("g.job")
 			.data(jobsbyhostname(jobs, n["hostname"]), function key(j){ return j["id"]; });
 
 		var jbs_g = jbs.enter().append("g")
-				.attr("class", "job")
+				.attr("class", function(d) { return d["job_name"] == "STDIN" ? "job stdin" : "job"; })
 				.attr("transform", "translate(0, 42)")
 				.attr("stroke", "none")
 				.attr("fill", function (d) { return jobcolor(d); })
@@ -199,18 +210,14 @@ function serversgraph(nodes, jobs) {
 		cores.enter().append("rect")
 				.attr("width", 25)
 				.attr("height", 25)
-				.attr("x", function(d) { return ((counter-d-1) % 4) * 25; })
-				.attr("y", function(d) { return Math.floor((counter-d-1)/4) * 25; })
+				.attr("x", function(d) { return ((counter-d-1) % n["cpuperrow"]) * 25; })
+				.attr("y", function(d) { return Math.floor((counter-d-1)/n["cpuperrow"]) * 25; })
 			;
+
 		// STDIN jobs S tags
-		jbs_g.append("text")
-				.attr("stroke", "white")
-				.attr("fill", "black")
-				.attr("x", 3)
-				.attr("y", 10)
-				.attr("font-size", "10px")
-				.attr("style", "font-weight: lighter;")
-			.text(function(d) { return (d["job_name"] == "STDIN") ? "S" : ""; })
+		d3.select(this).selectAll(".job.stdin rect")
+			.attr("rx", 10)
+			.attr("ry", 10);
 
 		// add the not used cores
 		d3.select(this).selectAll("rect.cpus").remove();
@@ -225,8 +232,8 @@ function serversgraph(nodes, jobs) {
 				.attr("stroke-width", ".04em")
 				.attr("width", 25)
 				.attr("height", 25)
-				.attr("x", function(d) { return (d % 4) * 25; })
-				.attr("y", function(d) { return Math.floor(d/4) * 25; })
+				.attr("x", function(d) { return (d % n["cpuperrow"]) * 25; })
+				.attr("y", function(d) { return Math.floor(d/n["cpuperrow"]) * 25; })
 			.exit().remove()
 			;
 	});

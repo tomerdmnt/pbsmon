@@ -15,7 +15,7 @@ class Size():
 		i = int(math.floor(math.log(self._bytes, 1024))) if self._bytes > 0 else 1
 		i = min(i, 3)
 		p = math.pow(1024, i)
-		return '%d%s' % (round(self._bytes/p, 2), self._factors[i])
+		return '%0.1f%s' % (round(self._bytes/p, 1), self._factors[i])
 	
 	def bytes(self):
 		return self._bytes
