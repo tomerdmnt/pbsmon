@@ -142,16 +142,18 @@ function serversgraph(nodes, jobs) {
 		;
 	
 	// create nodes with title text
-	nds.enter().append("svg")
+	newnodes = nds.enter().append("svg")
 			.attr("class", function(d) {
-				if (d["state"].includes("down"))
+				if (d["state"].includes("down") || d["state"].includes("offline"))
 					return "node down";
 				else
 					return "node";
 			})
 			.attr("height", 145)
-			.attr("width", function(d){ return cpuperrow(d)*25 + 3; })
-		.append("text")
+			.attr("width", function(d){ console.log("updating nodes width"); return cpuperrow(d)*25 + 3; })
+			;
+
+	newnodes.append("text")
 			.attr("x", 5)
 			.attr("y", 20)
 			.attr("stroke", "#444")
@@ -164,14 +166,8 @@ function serversgraph(nodes, jobs) {
 		})
 		;
 
-	nds.exit().remove();
-
-	// update memory bars
-	nds.select(".memory rect")
-		.attr("width", function (d) { return 100*memratio(d); })
-		;
 	// create memory bars
-	nds.enter().selectAll(".node").append("g")
+	newnodes.append("g")
 			.attr("class", "memory")
 			.attr("transform", "translate(0, 25)")
 		.append("rect")
@@ -188,7 +184,12 @@ function serversgraph(nodes, jobs) {
 			d3.select(this).attr("fill", "red");
 			memtip.hide(n);
 		})
+		// update memory bars
+		.merge(nds).selectAll(".memory")
+			.attr("width", function (d) { return cpuperrow(d)*25*memratio(d); })
 		;
+		;
+	nds.exit().remove();
 	
 	d3.selectAll(".node").each(function(n) {
 		d3.select(this).call(memtip);
