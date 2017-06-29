@@ -19,24 +19,29 @@ function jobsbyhostname(jobs, hostname) {
 
 var usermap = {}
 var usermapsize = 0;
-var jobcolor = function() {
+var usercolor = function() {
 	var scale = d3.scaleOrdinal(d3.schemeCategory20);
-	return function(job) {
+	return function(user) {
 		var i = -1;
-		var usr = job["user"];
-		if (usr in usermap) {
-			i = usermap[usr];
+		if (user in usermap) {
+			i = usermap[user];
 		} else {
 			i = usermapsize++;
-			usermap[usr] = i;
+			usermap[user] = i;
 		}
 		var color = d3.color(scale(i)).darker(.2);
-		if (job["resources_used.cpupercent"]/job["resources_used.ncpus"] < 50) {
-			color = color.brighter(.4);
-		}
-		return color.rgb();
+		return color;
 	}
 }();
+
+var jobcolor = function(job) {
+	var usr = job["user"];
+	var color = usercolor(usr);
+	if (job["resources_used.cpupercent"]/job["resources_used.ncpus"] < 50) {
+		color = color.brighter(.4);
+	}
+	return color.rgb();
+}
 
 var nodetip = d3.tip().attr("class", "d3-tip")
 	.attr("class", "d3-tip")
@@ -96,6 +101,33 @@ function memratio(node) {
 	return ratio;
 }
 
+function calctipdirection() {
+	var dright = window.innerWidth - d3.event.clientX;
+	var dleft = d3.event.clientX;
+	var ddown = window.innerHeight - d3.event.clientY;
+	var dup = d3.event.clientY;
+	var we = 'e'; var ns = 's';
+	if (ddown < 300) {
+		ns = 'n';
+		if (dup < 300)
+			ns = '';
+	}
+	if (dright < 300) {
+		we = 'w';
+		if (dleft < 300)
+			we = '';
+	}
+	if (ns === '' && we === '') ns = 's';
+	return ns + we;
+}
+
+function cpuperrow(node) {
+	var x = node["resources_available.ncpus"]/4;
+	x = Math.ceil(x);
+	x = Math.max(x, 4);
+	return x;
+}
+
 function serversgraph(nodes, jobs) {
 	var running = d3.select(".running");
 	var nds = running
@@ -112,20 +144,18 @@ function serversgraph(nodes, jobs) {
 					return "node";
 			})
 			.attr("height", 145)
-			.attr("width", function(d){
-				var x = d["resources_available.ncpus"]/4;
-				x = Math.ceil(x);
-				x = Math.max(x, 4);
-				d["cpuperrow"] = x;
-				return x*25 + 5;
-			})
+			.attr("width", function(d){ return cpuperrow(d); })
 		.append("text")
 			.attr("x", 5)
 			.attr("y", 20)
 			.attr("stroke", "#444")
 		.text(function(d){ return d["hostname"]; })
-		.on("mouseover", nodetip.show)
-		.on("mouseout", nodetip.hide)
+		.on("mouseover", function(n) {
+			nodetip.direction(calctipdirection()).show(n);
+		})
+		.on("mouseout", function(n) {
+			nodetip.direction(calctipdirection()).show(n);
+		})
 		;
 
 	nds.exit().remove();
@@ -141,7 +171,7 @@ function serversgraph(nodes, jobs) {
 		.append("rect")
 			.attr("x", 0)
 			.attr("y", 0)
-			.attr("width", function (d) { return d["cpuperrow"]*25*memratio(d); })
+			.attr("width", function (d) { return cpuperrow(d)*25*memratio(d); })
 			.attr("height", 15)
 			.attr("fill", "red")
 		.on("mouseover", function(n){
@@ -159,16 +189,11 @@ function serversgraph(nodes, jobs) {
 		d3.select(this).call(jobtip);
 		d3.select(this).call(nodetip);
 
-		var x = n["resources_available.ncpus"]/4;
-		x = Math.ceil(x);
-		x = Math.max(x, 4);
-		n["cpuperrow"] = x;
-
 		var jbs = d3.select(this)
 			.selectAll("g.job")
 			.data(jobsbyhostname(jobs, n["hostname"]), function key(j){ return j["id"]; });
 
-		var jbs_g = jbs.enter().append("g")
+		jbs.enter().append("g")
 				.attr("class", function(d) { return d["job_name"] == "STDIN" ? "job stdin" : "job"; })
 				.attr("transform", "translate(0, 42)")
 				.attr("stroke", "none")
@@ -176,23 +201,7 @@ function serversgraph(nodes, jobs) {
 				.attr("data-clipboard-text", function(d) { return d["id"]; })
 			.on("mouseover", function(jb) {
 				d3.select(this).attr("fill", function (d) { return d3.color(jobcolor(d)).brighter(.6); });
-				var dright = window.innerWidth - d3.event.clientX;
-				var dleft = d3.event.clientX;
-				var ddown = window.innerHeight - d3.event.clientY;
-				var dup = d3.event.clientY;
-				var we = 'e'; var ns = 's';
-				if (ddown < 300) {
-					ns = 'n';
-					if (dup < 300)
-						ns = '';
-				}
-				if (dright < 300) {
-					we = 'w';
-					if (dleft < 300)
-						we = '';
-				}
-				if (ns === '' && we === '') ns = 's';
-				jobtip.direction(ns+we).show(jb);
+				jobtip.direction(calctipdirection()).show(jb);
 			})
 			.on("mouseout", function(jb) {
 				d3.select(this).attr("fill", function (d) { return jobcolor(d); })
@@ -210,16 +219,16 @@ function serversgraph(nodes, jobs) {
 		cores.enter().append("rect")
 				.attr("width", 25)
 				.attr("height", 25)
-				.attr("x", function(d) { return ((counter-d-1) % n["cpuperrow"]) * 25; })
-				.attr("y", function(d) { return Math.floor((counter-d-1)/n["cpuperrow"]) * 25; })
+				.attr("x", function(d) { return ((counter-d-1) % cpuperrow(n)) * 25; })
+				.attr("y", function(d) { return Math.floor((counter-d-1)/cpuperrow(n)) * 25; })
 			;
 
-		// STDIN jobs S tags
+		// STDIN jobs mark with S tags
 		d3.select(this).selectAll(".job.stdin rect")
 			.attr("rx", 10)
 			.attr("ry", 10);
 
-		// add the not used cores
+		// add the unused cores
 		d3.select(this).selectAll("rect.cpus").remove();
 		d3.select(this)
 			.selectAll("rect.cpus")
@@ -232,8 +241,8 @@ function serversgraph(nodes, jobs) {
 				.attr("stroke-width", ".04em")
 				.attr("width", 25)
 				.attr("height", 25)
-				.attr("x", function(d) { return (d % n["cpuperrow"]) * 25; })
-				.attr("y", function(d) { return Math.floor(d/n["cpuperrow"]) * 25; })
+				.attr("x", function(d) { return (d % cpuperrow(n)) * 25; })
+				.attr("y", function(d) { return Math.floor(d/cpuperrow(n)) * 25; })
 			.exit().remove()
 			;
 	});
