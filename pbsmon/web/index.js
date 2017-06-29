@@ -45,7 +45,7 @@ var jobcolor = function(job) {
 
 var nodetip = d3.tip().attr("class", "d3-tip")
 	.attr("class", "d3-tip")
-	.offset([-5, 0])
+	.offset([0, 0])
 	.html(function (d) {
 		return '<div class="tip-text">' + 
 			"<span>State:</span>" + d["state"] + "<br/>" +
@@ -56,7 +56,7 @@ var nodetip = d3.tip().attr("class", "d3-tip")
 
 var jobtip = d3.tip().attr("class", "d3-tip")
 	.attr("class", "d3-tip")
-	.offset([15, 5])
+	.offset([0, 0])
 	.html(function (d) {
 		return '<div class="tip-text">' + 
 			"<span>User:</span>" + d["user"] + "<br />" +
@@ -101,23 +101,29 @@ function memratio(node) {
 	return ratio;
 }
 
-function calctipdirection() {
+function calctipdirection(distance_ns, distance_we, ns, we) {
 	var dright = window.innerWidth - d3.event.clientX;
 	var dleft = d3.event.clientX;
 	var ddown = window.innerHeight - d3.event.clientY;
 	var dup = d3.event.clientY;
-	var we = 'e'; var ns = 's';
-	if (ddown < 300) {
+
+	we = we || '';
+	ns = ns || '';
+	if (ddown < distance_ns) {
 		ns = 'n';
-		if (dup < 300)
+		if (dup < distance_ns)
 			ns = '';
+	} else if (dup < distance_ns) {
+		ns = 's';
 	}
-	if (dright < 300) {
+	if (dright < distance_we) {
 		we = 'w';
-		if (dleft < 300)
+		if (dleft < distance_we)
 			we = '';
+	} else if (dleft < distance_we) {
+		we = 'e';
 	}
-	if (ns === '' && we === '') ns = 's';
+	if (ns === '' && we === '') ns = 'n';
 	return ns + we;
 }
 
@@ -144,17 +150,17 @@ function serversgraph(nodes, jobs) {
 					return "node";
 			})
 			.attr("height", 145)
-			.attr("width", function(d){ return cpuperrow(d); })
+			.attr("width", function(d){ return cpuperrow(d)*25 + 3; })
 		.append("text")
 			.attr("x", 5)
 			.attr("y", 20)
 			.attr("stroke", "#444")
 		.text(function(d){ return d["hostname"]; })
 		.on("mouseover", function(n) {
-			nodetip.direction(calctipdirection()).show(n);
+			nodetip.direction(calctipdirection(50, 200, "n")).show(n);
 		})
 		.on("mouseout", function(n) {
-			nodetip.direction(calctipdirection()).show(n);
+			nodetip.hide();
 		})
 		;
 
@@ -162,7 +168,7 @@ function serversgraph(nodes, jobs) {
 
 	// update memory bars
 	nds.select(".memory rect")
-		.attr("width", function (d) { console.log(d); return 100*memratio(d); })
+		.attr("width", function (d) { return 100*memratio(d); })
 		;
 	// create memory bars
 	nds.enter().selectAll(".node").append("g")
@@ -201,7 +207,7 @@ function serversgraph(nodes, jobs) {
 				.attr("data-clipboard-text", function(d) { return d["id"]; })
 			.on("mouseover", function(jb) {
 				d3.select(this).attr("fill", function (d) { return d3.color(jobcolor(d)).brighter(.6); });
-				jobtip.direction(calctipdirection()).show(jb);
+				jobtip.direction(calctipdirection(250, 300, "s", "e")).show(jb);
 			})
 			.on("mouseout", function(jb) {
 				d3.select(this).attr("fill", function (d) { return jobcolor(d); })
