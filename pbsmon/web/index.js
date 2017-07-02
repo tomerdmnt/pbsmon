@@ -214,6 +214,8 @@ function serversgraph(nodes, jobs) {
 				d3.select(this).attr("fill", function (d) { return jobcolor(d); })
 				jobtip.hide(jb);
 			})
+			.merge(jbs).select(".job")
+				.attr("fill", function (d) { return jobcolor(d); })
 			;
 		jbs.exit().remove();
 
