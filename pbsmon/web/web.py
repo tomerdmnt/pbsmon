@@ -72,32 +72,32 @@ class S(BaseHTTPRequestHandler):
 					data = f.read(2048)
 	
 	def do_HEAD(self):
-		if self.path == '/':
+		if self.path == '/' or self.path == '/tamir':
 			self._set_headers('text/html')
-		elif self.path == '/jobs.json':
+		elif self.path == '/jobs.json' or self.path == '/tamir/jobs.json':
 			self._set_headers('application/json')
-		elif self.path == '/nodes.json':
+		elif self.path == '/nodes.json' or self.path == '/tamir/nodes.json':
 			self._set_headers('application/json')
-		elif self.path == '/index.js':
+		elif self.path == '/index.js' or self.path == '/tamir/index.js':
 			self._set_headers('text/javascript')
-		elif self.path == '/style.css':
+		elif self.path == '/style.css' or self.path == '/tamir/style.css':
 			self._set_headers('text/css')
 		else:
 			self.send_response(404)
 			self.end_headers()
 
 	def do_GET(self):
-		if self.path == '/':
+		if self.path == '/' or self.path == '/tamir':
 			self._serve_file('/index.html', 'text/html')
-		elif self.path == '/jobs.json':
+		elif self.path == '/jobs.json' or self.path == '/tamir/jobs.json':
 			self._set_headers('application/json')
 			self.wfile.write(jobs())
-		elif self.path == '/nodes.json':
+		elif self.path == '/nodes.json' or self.path == '/tamir/nodes.json':
 			self._set_headers('application/json')
 			self.wfile.write(nodes())
-		elif self.path == '/index.js':
+		elif self.path == '/index.js' or self.path == '/tamir/index.js':
 			self._serve_file('/index.js', 'text/javascript')
-		elif self.path == '/style.css':
+		elif self.path == '/style.css' or self.path == '/tamir/style.css':
 			self._serve_file('/style.css', 'text/css')
 		else:
 			self.send_response(404)

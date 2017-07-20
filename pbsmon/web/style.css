@@ -70,3 +70,10 @@ html, body {
 .node.down text {
 	text-decoration: line-through;
 }
+
+.color-box {
+	width: 10px;
+    height: 10px;
+	display: inline-block;
+}
+
