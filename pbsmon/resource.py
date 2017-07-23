@@ -18,6 +18,8 @@ class Resource(dict):
 		for key in self:
 			if key.find(substr) != -1:
 				fields[key] = self[key]
+			if str(self[key]).find(substr) != -1:
+				fields[key] = self[key]
 		return fields
 
 def parsetimedelta(val):

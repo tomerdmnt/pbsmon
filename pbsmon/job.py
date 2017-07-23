@@ -55,7 +55,7 @@ def _parse_jobs():
 				id = line.split(':')[1].strip()
 				job.set('Id', id)
 				continue
-			field = line.split('=')
+			field = line.split(' = ')
 			if len(field) > 1:
 				key = field[0].strip()
 				val = field[1].strip()
