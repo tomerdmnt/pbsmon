@@ -54,56 +54,58 @@ def set_interval(func, sec):
 	return t
 
 class S(BaseHTTPRequestHandler):
-	def _set_headers(self, contenttype='text/html'):
-		self.send_response(200)
-		self.send_header('Content-type', contenttype)
+	protocol_version = "HTTP/1.1"
+
+	def _set_headers(self, len, contenttype='text/html', status=200):
+		self.send_response(status)
+		self.send_header('Content-Type', contenttype)
 		self.send_header('Content-Encoding', 'gzip')
+		self.send_header('Content-Length', len)
 		self.end_headers()
 
 	def _serve_file(self, file, contenttype):
-		self._set_headers(contenttype)
 		if file in filecache():
+			self._set_headers(len(filecache()[file]), contenttype)
 			self.wfile.write(filecache()[file])
-		else: 
-			with open(PATH + file, 'rb') as f:
-				data = f.read(2048)
-				while data:
-					self.wfile.write(data)
-					data = f.read(2048)
+		else:
+			self._set_headers(0, status=404)
+			self.end_headers()
 	
 	def do_HEAD(self):
 		if self.path == '/' or self.path == '/tamir':
-			self._set_headers('text/html')
+			self._set_headers(len(filecache()['index.html']), 'text/html')
 		elif self.path == '/jobs.json' or self.path == '/tamir/jobs.json':
-			self._set_headers('application/json')
+			self._set_headers(len(jobs()), 'application/json')
 		elif self.path == '/nodes.json' or self.path == '/tamir/nodes.json':
-			self._set_headers('application/json')
+			self._set_headers(len(nodes()), 'application/json')
 		elif self.path == '/index.js' or self.path == '/tamir/index.js':
-			self._set_headers('text/javascript')
+			self._set_headers(len(filecache()['index.js']), 'text/javascript')
 		elif self.path == '/style.css' or self.path == '/tamir/style.css':
-			self._set_headers('text/css')
+			self._set_headers(len(filecache()['style.css']), 'text/css')
 		else:
 			self.send_response(404)
+			self.send_header('Content-Length', 0)
 			self.end_headers()
 
 	def do_GET(self):
 		if self.path == '/' or self.path == '/tamir':
 			self._serve_file('/index.html', 'text/html')
 		elif self.path == '/jobs.json' or self.path == '/tamir/jobs.json':
-			self._set_headers('application/json')
-			self.wfile.write(jobs())
+			data = jobs()
+			self._set_headers(len(data), 'application/json')
+			self.wfile.write(data)
 		elif self.path == '/nodes.json' or self.path == '/tamir/nodes.json':
-			self._set_headers('application/json')
-			self.wfile.write(nodes())
+			data = nodes()
+			self._set_headers(len(data), 'application/json')
+			self.wfile.write(data)
 		elif self.path == '/index.js' or self.path == '/tamir/index.js':
 			self._serve_file('/index.js', 'text/javascript')
 		elif self.path == '/style.css' or self.path == '/tamir/style.css':
 			self._serve_file('/style.css', 'text/css')
 		else:
 			self.send_response(404)
+			self.send_header('Content-Length', 0)
 			self.end_headers()
-		self.finish()
-
 
 def run(cluster, server_class=HTTPServer, handler_class=S, port=0):
 	server_address = ('', port)
@@ -114,8 +116,8 @@ def run(cluster, server_class=HTTPServer, handler_class=S, port=0):
 	cachefile('/style.css')
 	cachenodes()
 	cachejobs()
-	set_interval(cachenodes, 60*10)
-	set_interval(cachejobs, 60*10)
+	set_interval(cachenodes, 60*5)
+	set_interval(cachejobs, 60*5)
 
 	httpd = server_class(server_address, handler_class)
 	print('Starting on http://power8.tau.ac.il:%s' % httpd.socket.getsockname()[1])
