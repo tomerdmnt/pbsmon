@@ -27,11 +27,12 @@ def getjobs(cluster=None):
 		# i.e. all nodes that the job may run on are in cluster
 		for j in alljobs:
 			# if we know where the job is running
-			exechost = j.get('exec_host')
-			if exechost: 
-				exechost = exechost.split('/')[0]
-				if exechost in clusternodes:
-					jobs.append(j)
+			exechosts = j.get('exec_host')
+			if exechosts: 
+				for exechost in exechosts.split("+"):
+					exechost = exechost.split('/')[0]
+					if exechost in clusternodes:
+						jobs.append(j)
 			else:
 				q = j.get('queue')
 				qlist = queues.get(q, {}).get('default_chunk.Qlist', [])
@@ -44,6 +45,7 @@ def _parse_jobs():
 	p = subprocess.Popen(['qstat', '-f'], stdout=subprocess.PIPE)
 	jobs = []
 	job = Job()
+	key = ""
 	for line in p.stdout:
 		# end of job 
 		if line.strip() == "":
@@ -60,6 +62,9 @@ def _parse_jobs():
 				key = field[0].strip()
 				val = field[1].strip()
 				job.set(key, val)
+			else:
+				# append to last field
+				job.append(key, line.strip())
 	# last node if not empty
 	if job:
 		jobs.append(job)

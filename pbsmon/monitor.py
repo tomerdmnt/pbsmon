@@ -28,7 +28,7 @@ def checkmemabuse(node, jobs, alertfn):
 	users = []
 	node_host = node.get('hostname', 'n/a')
 	available = node.get('resources_available.mem', Size.frombytes(0))
-	used = node.get('resources_used.mem', Size.frombytes(0))
+	used = node.get('resources_assigned.mem', Size.frombytes(0))
 	for j in jobs:
 		if j.get('exec_host', '').split('/')[0] == node_host:
 			memory_sum += j.get('resource_list.mem', Size.frombytes(0)).bytes()
@@ -51,8 +51,9 @@ def checkcput(jobs, alertfn):
 	for j in jobs:
 		cput = j.get('resources_used.cput', timedelta(0))
 		wallt = j.get('resources_used.walltime', timedelta(0))
-		if wallt.total_seconds() > MIN_WALL_TIME:
-			if cput.total_seconds()/float(wallt.total_seconds()) < MIN_CPUT_RATIO:
+		isstdin = j.get('job_name') == "STDIN"
+		if wallt.total_seconds() > MIN_WALL_TIME and isstdin == False:
+			if cput.total_seconds()/float(wallt.total_seconds()) < MIN_CPUT_RATIO :
 				alertfn(j.get('user', ''), 'job {0} has low cputime {1} / {2}'.format(
 					j.get('id', ''),
 					timedelta_str(cput),
@@ -80,6 +81,8 @@ def checkoutliers(cluster, alertfn):
 	for job, stats in runtime.outliers(cluster):
 		if job == None:
 			return
+		if len(stats) < 5:
+			return
 		user = job.get('user', '')
 		id = job.get('id', '')
 		jobname = job.get('job_name', '')
@@ -103,7 +106,7 @@ def run(cluster, alertfn):
 			#checkofflinenodes()
 			if checknfs('/tamir1') == False:
 				alertfn("system", "/tamir1 is stale or unmounted")
-			checkoutliers(cluster, alertfn)
+			# checkoutliers(cluster, alertfn)
 			checkclusters(alertfn)
 
 			time.sleep(SLEEP_TIME)

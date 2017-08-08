@@ -1,0 +1,37 @@
+caching nodes
+caching jobs
+running monitor
+Starting on http://power8.tau.ac.il:39063
+132.66.112.30 - - [06/Aug/2017 23:23:43] "GET //tamir HTTP/1.1" 200 -
+132.66.112.30 - - [06/Aug/2017 23:23:43] "GET //tamir/style.css HTTP/1.1" 200 -
+132.66.112.30 - - [06/Aug/2017 23:23:43] "GET //tamir/index.js HTTP/1.1" 200 -
+132.66.112.30 - - [06/Aug/2017 23:23:43] "GET //tamir/jobs.json HTTP/1.1" 200 -
+132.66.112.30 - - [06/Aug/2017 23:23:43] "GET //tamir/nodes.json HTTP/1.1" 200 -
+132.66.112.30 - - [06/Aug/2017 23:23:44] "GET //tamir HTTP/1.1" 200 -
+132.66.112.30 - - [06/Aug/2017 23:23:44] "GET //tamir/alerts.json HTTP/1.1" 200 -
+132.66.112.30 - - [06/Aug/2017 23:23:44] "GET //tamir/style.css HTTP/1.1" 200 -
+132.66.112.30 - - [06/Aug/2017 23:23:44] "GET //tamir/index.js HTTP/1.1" 200 -
+132.66.112.30 - - [06/Aug/2017 23:23:45] "GET //tamir/jobs.json HTTP/1.1" 200 -
+132.66.112.30 - - [06/Aug/2017 23:23:45] "GET //tamir/nodes.json HTTP/1.1" 200 -
+132.66.11.212 - - [06/Aug/2017 23:23:45] "GET / HTTP/1.0" 200 -
+132.66.11.212 - - [06/Aug/2017 23:23:45] "GET /style.css HTTP/1.0" 200 -
+132.66.11.212 - - [06/Aug/2017 23:23:46] "GET /index.js HTTP/1.0" 200 -
+132.66.11.212 - - [06/Aug/2017 23:23:47] "GET /jobs.json HTTP/1.0" 200 -
+132.66.11.212 - - [06/Aug/2017 23:23:47] "GET /nodes.json HTTP/1.0" 200 -
+132.66.11.212 - - [06/Aug/2017 23:23:47] "GET /favicon.ico HTTP/1.0" 404 -
+132.66.112.30 - - [06/Aug/2017 23:23:47] "GET //tamir/alerts.json HTTP/1.1" 200 -
+132.66.11.212 - - [06/Aug/2017 23:23:48] "GET /alerts.json HTTP/1.0" 200 -
+Traceback (most recent call last):
+  File "/a/home/cc/students/csguests/tomerdiament/.local/bin//pbsmon", line 339, in <module>
+    _main()
+  File "/a/home/cc/students/csguests/tomerdiament/.local/bin//pbsmon", line 336, in _main
+    args.func(args)
+  File "/a/home/cc/students/csguests/tomerdiament/.local/bin//pbsmon", line 182, in _web_cmd
+    web.run(args.cluster, port=args.port)
+  File "/a/home/cc/students/csguests/tomerdiament/.local/lib/python2.7/site-packages/pbsmon/web/web.py", line 156, in run
+    
+  File "/usr/lib64/python2.7/SocketServer.py", line 236, in serve_forever
+    poll_interval)
+  File "/usr/lib64/python2.7/SocketServer.py", line 155, in _eintr_retry
+    return func(*args)
+KeyboardInterrupt

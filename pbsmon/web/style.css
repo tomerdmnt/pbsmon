@@ -1,5 +1,10 @@
-html, body {
-	padding: 2em;
+html {
+	padding: 0;
+	margin: 0;
+}
+
+body {
+	padding: 4em;
 	margin: 0;
 }
 
@@ -77,3 +82,78 @@ html, body {
 	display: inline-block;
 }
 
+.queues .jobs {
+	display: none;
+}
+.queues .cpus {
+	display: inline;
+}
+.queues.show_jobs .jobs {
+	display: inline;
+}
+.queues.show_jobs .cpus {
+	display: none;
+}
+
+.toggle {
+	font-size: .8em;
+	float: right;
+	color: black;
+}
+
+.alerts {
+	position: fixed;
+	display: none;
+	margin-left: auto;
+	margin-right: auto;
+	left: 0;
+	right: 0;
+	width: 80%;
+	line-height: 1;
+	padding: 1em;
+	background: rgba(0, 0, 0, 0.8);
+	color: #fff;
+	border-radius: 5px;
+	max-height: 80%;
+	overflow: scroll;
+}
+
+.alerts table {
+	width: 100%;
+}
+
+.alerts tr {
+	padding: .4em;
+}
+
+.alerts td {
+	padding: .4em;
+	font-size: 1.05em;
+	min-width: 9em;
+}
+
+.bar a {
+	padding: 5px;
+	color: black;
+	text-decoration: none;
+}
+
+.bar a:hover {
+	text-decoration: underline;
+}
+
+.show {
+	display: block;
+}
+
+.hit rect {
+	fill: yellow;
+}
+
+.hit rect:hover {
+	fill-opacity: .5;
+}
+
+#search {
+	font-size: .9em;
+}

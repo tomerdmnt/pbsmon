@@ -12,6 +12,12 @@ class Resource(dict):
 
 	def get(self, key, default=None):
 		return super(Resource, self).get(key.lower(), default)
+	
+	def append(self, key, val):
+		if key in self:
+			self[key.lower()] = self[key.lower()] + val
+		else:
+			self[key.lower()] = val
 
 	def find(self, substr):
 		fields = {}

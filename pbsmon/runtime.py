@@ -35,11 +35,14 @@ def check_ended_jobs(cluster, user, no_stdin):
 
 def addstat(job):
 	jobname = job.get('job_name')
+	user = job.get('user')
 	jobwalltime = job.get('resources_used.walltime')
-	if jobname in stats:
-		stats[jobname].append(jobwalltime)
+	if user not in stats:
+		stats[user] = {}
+	if jobname in stats[user]:
+		stats[user][jobname].append(jobwalltime)
 	else:
-		stats[jobname] = [jobwalltime]
+		stats[user][jobname] = [jobwalltime]
 
 def percentile(lst, percent, key=lambda x:x):
 	k = (len(lst)-1)*percent
@@ -65,6 +68,7 @@ def outliers(cluster, user=None, k=1.5, no_stdin=True):
 		for j in check_ended_jobs(cluster, user, no_stdin):
 			addstat(j)
 			jobname = j.get('job_name')
-			if isoutlier(stats.get(jobname), j.get('resources_used.walltime'), k):
-				yield (j, stats[jobname])
+			user = j.get('user')
+			if isoutlier(stats[user][jobname], j.get('resources_used.walltime'), k):
+				yield (j, stats[user][jobname])
 		yield (None, None)
