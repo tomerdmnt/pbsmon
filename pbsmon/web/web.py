@@ -12,12 +12,6 @@ from time import strftime, localtime
 
 PATH = os.path.dirname(os.path.abspath(__file__))
 
-def gzipcompress(data):
-	out = StringIO.StringIO()
-	with gzip.GzipFile(fileobj=out, mode="wb") as f:
-		f.write(data)
-	return out.getvalue()
-
 class _globals:
     pass
 
@@ -25,6 +19,12 @@ __globals = _globals()
 __globals.cluster = None
 __globals.filecache = {}
 __globals.alerts = []
+
+def gzipcompress(data):
+	out = StringIO.StringIO()
+	with gzip.GzipFile(fileobj=out, mode="wb") as f:
+		f.write(data)
+	return out.getvalue()
 
 def cachejobs():
 	print("caching jobs")
@@ -127,7 +127,7 @@ def run_monitor():
 def alertfn(user, msg):
 	now = strftime("%Y-%m-%d %H:%M:%S", localtime())
 	__globals.alerts.insert(0, {"time": now, "user": user, "msg": msg})
-	__globals.alerts = __globals.alerts[:1000]
+	__globals.alerts = __globals.alerts[:2000]
 
 def run(cluster, server_class=HTTPServer, handler_class=S, port=0):
 	server_address = ('', port)
@@ -139,8 +139,8 @@ def run(cluster, server_class=HTTPServer, handler_class=S, port=0):
 	cachefile('/style.css')
 	cachenodes()
 	cachejobs()
-	set_interval(cachenodes, 60*5)
-	set_interval(cachejobs, 60*5)
+	set_interval(cachenodes, 60*3)
+	set_interval(cachejobs, 60*3)
 
 	t = threading.Thread(target=run_monitor)
 	t.daemon = True
@@ -151,4 +151,4 @@ def run(cluster, server_class=HTTPServer, handler_class=S, port=0):
 	httpd.serve_forever()
 
 if __name__ == "__main__":
-	trun(None)
+	run(None)

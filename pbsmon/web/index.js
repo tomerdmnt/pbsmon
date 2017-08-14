@@ -1,14 +1,5 @@
 
-function fetchjobs(cb) {
-	load = function () {
-		jobs = JSON.parse(this.responseText);
-		cb(jobs);
-	}
-	xhr = new XMLHttpRequest();
-	xhr.addEventListener("load", reqListener);
-	xhr.open("GET", "/jobs.json");
-	xhr.send();
-}
+var snapshotloaded = false;
 
 function jobsbyhostname(jobs, hostname) {
 	return jobs.filter(function(j){
@@ -42,7 +33,7 @@ function allusers(jobs) {
 	}))).filter(function(u){ return u != undefined; });
 }
 
-function userqueues(user, queues, jobs) {
+function userqueuesstats(user, queues, jobs) {
 	res = [];
 	idx = 0;
 	queues.forEach(function(q) {
@@ -244,7 +235,7 @@ function queuesgraph(jobs) {
 		.html(function(u){ return "<div class='color-box' style='background-color: " + usercolor(u) + "'></div> " + u;});
 	
 	var uq = userrow.selectAll("td.stats")
-		.data(function(user) { return userqueues(user, queues, jobs); }).enter();
+		.data(function(user) { return userqueuesstats(user, queues, jobs); }).enter();
 	
 	var td = uq.append("td")
 			.attr("class", "stats")
@@ -282,6 +273,10 @@ function queuesgraph(jobs) {
 
 function serversgraph(nodes, jobs) {
 	var running = d3.select(".running");
+	d3.select(".cpuutil")
+		.text(nodes.reduce(function(sum, n){ return sum + n["resources_assigned.ncpus"]; }, 0) + " of " +
+			nodes.reduce(function(sum, n){ return sum + n["resources_available.ncpus"]; }, 0));
+
 	var nds = running
 		.selectAll("svg.node")
 		.data(nodes, function key(n){return n["hostname"];})
@@ -313,7 +308,10 @@ function serversgraph(nodes, jobs) {
 		;
 	
 	// create memory bars
-	d3.selectAll(".node .memory rect")
+	d3.selectAll(".node .memory")
+		.data(nodes, function key(n){return n["hostname"];})
+		;
+	d3.selectAll(".node .memory .used")
 		.data(nodes, function key(n){return n["hostname"];})
 		;
 	var memory_g = newnodes.append("g")
@@ -368,7 +366,6 @@ function serversgraph(nodes, jobs) {
 				.attr("transform", "translate(0, 42)")
 				.attr("stroke", "none")
 				.attr("fill", function (d) { return jobcolor(d); })
-				.attr("data-clipboard-text", function(d) { return d["id"]; })
 			.classed("stdin", function(d){return d["job_name"] == "STDIN";})
 			.classed("interactive", function(d){return d["interactive"];})
 			.on("mouseover", function(jb) {
@@ -379,6 +376,31 @@ function serversgraph(nodes, jobs) {
 				d3.select(this).attr("fill", function (d) { return jobcolor(d); })
 				jobtip.hide(jb);
 			})
+			.on("click", function(jb) {
+				var jobinfoel = d3.select(".jobinfo")
+				jobinfoel.selectAll("table").remove();
+
+				var table = jobinfoel.append("table").append("tbody");
+				var tr = table.append("tr");
+				tr.append("td").text("id");
+				tr.append("td").text(jb["id"])
+					.append("a")
+							.attr("href", "#")
+							.attr("data-clipboard-text", jb["id"])
+						.text("copy")
+						.on("click", function(){ d3.event.preventDefault(); });
+
+				for (var k in jb) {
+					if (k === "id") continue;
+					var tr = table.append("tr")
+					tr.append("td").text(k);
+					tr.append("td").text(jb[k]);
+				}
+
+				toggleJobModal();
+				d3.event.preventDefault();
+				d3.event.stopPropagation();
+			});
 			;
 		jbs.exit().remove();
 
@@ -464,6 +486,7 @@ function serversgraph(nodes, jobs) {
 }
 
 function showgraph() {
+	if (snapshotloaded) return;
 	var q = d3.queue();
 
 	var prefix = location.pathname;
@@ -480,28 +503,36 @@ function showgraph() {
 		});
 }
 
-function populatealerts(alerts) {
+function updatealerts(alerts) {
 	var alertsdiv = d3.select(".alerts");
 	alertsdiv.selectAll("table").remove();
 
 	var table = alertsdiv.append("table").append("tbody");
 
-	alerts.forEach(function(alert) {
-		var tr = table.append("tr");
-		tr.append("td").text(alert.time);
-		tr.append("td").html("<div class='color-box' style='background-color: " + usercolor(alert.user) + "'></div> " + alert.user);
-		tr.append("td").attr("colspan", 4).text(alert.msg);
-	});
+	var tr = table.selectAll("tr")
+		.data(alerts).enter()
+		.append("tr");
+
+	tr.append("td").text(function(alert){ return alert.time; });
+	tr.append("td").html(function(alert){ return "<div class='color-box' style='background-color: " + usercolor(alert.user) + "'></div> " + alert.user});
+	tr.append("td").attr("colspan", 4).text(function(alert){ return alert.msg; });
 }
 
-function updatealerts() {
+function pathprefix() {
+	var prefix = location.pathname;
+	if (prefix[prefix.length-1] !== "/")
+		prefix += '/';
+	return prefix;
+}
+
+function fetchalerts() {
 	var prefix = location.pathname;
 	if (prefix[prefix.length-1] !== "/")
 		prefix += '/';
 
 	d3.json(prefix + "alerts.json", function(err, alerts) {
 		if (err) return console.log(err);
-		populatealerts(alerts);
+		updatealerts(alerts);
 	});
 }
 
@@ -523,29 +554,85 @@ function searchjob() {
 	}
 }
 
+function savesnapshot() {
+	console.log("saving snapshot");
+	var snapshot = {
+		nodes: d3.selectAll(".node").data(),
+		jobs: d3.selectAll(".job").data()
+	};
+	var filename = "snapshot-" + new Date().getTime() + ".pbsmon";
+	var file = new File([JSON.stringify(snapshot)], filename, {type: "text/plain;charset=utf-8"});
+	saveAs(file, filename);
+}
+
+function loadsnapshot() {
+	snapshotloaded = true;
+	var file = d3.event.target.files[0];
+	var r = new FileReader();
+
+	r.addEventListener("load", function(e) {
+		var snapshot = JSON.parse(e.target.result);
+		queuesgraph(snapshot.jobs);
+		serversgraph(snapshot.nodes, snapshot.jobs);
+
+		d3.select(".showingsnapshot")
+			.text(" viewing " + file.name + "; click to go back")
+			.on("click", function() {
+				snapshotloaded = false;
+				d3.select(this).text("");
+				document.querySelector("#loadsnapshot").value = null;
+				d3.event.preventDefault();
+				showgraph();
+			});
+	});
+	
+	r.readAsText(file);
+}
+
+function Modal(el) {
+	d3.select(el).classed("show", false);
+	d3.select(el).classed("modal", true);
+
+	d3.select(el)
+		.on("click", function(e) {
+			d3.event.stopPropagation();
+		});
+	
+	document.querySelector("body")
+		.addEventListener("click", function(e) {
+			d3.select(el).classed("show", false);
+		});
+
+	return function toggleModal() {
+		d3.select(el).classed("show", !d3.select(el).classed("show"));
+	}
+}
+
+var toggleJobModal;
+
 window.onload = function(e) {
 	showgraph();
 	setInterval(showgraph, 120000);
-	setTimeout(updatealerts, 1000);
-	setInterval(updatealerts, 600000);
+	setTimeout(fetchalerts, 3000);
+	setInterval(fetchalerts, 300000);
+
+	var toggleAlertsModal = Modal(document.querySelector(".alerts"));
+	toggleJobModal = Modal(document.querySelector(".jobinfo"));
 
 	d3.select(".alertsbtn")
 		.on("click", function() {
-			var alertsdiv = d3.select(".alerts")
-			alertsdiv.classed("show", !alertsdiv.classed("show"));
+			toggleAlertsModal();
 			d3.event.preventDefault();
 			d3.event.stopPropagation();
 		});
 	
-	d3.select("body")
-		.on("click", function(e) {
-			d3.select(".alerts").classed("show", false);
+	d3.select(".savesnapshotbtn")
+		.on("click", function() {
+			savesnapshot();
+			d3.event.preventDefault();
 		});
 	
-	d3.select(".alerts")
-		.on("click", function(e) {
-			d3.event.stopPropagation();
-		});
-	
+	d3.select("#loadsnapshot").on("change", loadsnapshot);
+
 	d3.select("#search").on("input", searchjob);
 }
