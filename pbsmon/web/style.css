@@ -101,7 +101,7 @@ body {
 	color: black;
 }
 
-.alerts {
+.modal {
 	position: fixed;
 	display: none;
 	margin-left: auto;
@@ -118,7 +118,7 @@ body {
 	overflow: scroll;
 }
 
-.alerts table {
+.alerts table, .jobinfo table {
 	width: 100%;
 }
 
@@ -126,10 +126,42 @@ body {
 	padding: .4em;
 }
 
+.jobinfo tr {
+	padding: .2em;
+}
+
 .alerts td {
 	padding: .4em;
 	font-size: 1.05em;
 	min-width: 9em;
+}
+
+.jobinfo td {
+	font-size: 1.05em;
+	min-width: 9em;
+}
+
+.jobinfo td:first-child {
+	font-weight: bold;
+}
+
+.jobinfo a {
+	padding-left: .5em;
+	color: white;
+	font-size: .8em;
+}
+
+.jobinfo a:hover {
+	text-decoration: none;
+}
+
+.bar {
+	padding: 0;
+	list-style: none;
+}
+
+.bar li {
+	display: inline-block;
 }
 
 .bar a {
@@ -157,3 +189,21 @@ body {
 #search {
 	font-size: .9em;
 }
+
+.overall {
+	margin-top: .5em;
+}
+
+label {
+	cursor: pointer
+}
+
+label:hover {
+	text-decoration: underline;
+}
+
+#loadsnapshot {
+	opacity: 0;
+	position: absolute;
+	z-index: -1;
+}	
