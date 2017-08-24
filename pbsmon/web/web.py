@@ -89,6 +89,8 @@ class S(BaseHTTPRequestHandler):
 			self._set_headers('text/javascript')
 		elif self.path == '/style.css' or self.path == '//tamir/style.css':
 			self._set_headers('text/css')
+		elif self.path == '/favicon.ico' or self.path == '//tamir/favicon.ico':
+			self._set_headers('image/x-icon')
 		else:
 			self.send_response(404)
 			self.send_header('Content-Length', 0)
@@ -115,6 +117,8 @@ class S(BaseHTTPRequestHandler):
 			self._serve_file('/index.js', 'text/javascript')
 		elif self.path == '/style.css' or self.path == '//tamir/style.css':
 			self._serve_file('/style.css', 'text/css')
+		elif self.path == '/favicon.ico' or self.path == '//tamir/favicon.ico':
+			self._serve_file('/favicon.ico', 'image/x-icon')
 		else:
 			self.send_response(404)
 			self.send_header('Content-Length', 0)
@@ -137,6 +141,7 @@ def run(cluster, server_class=HTTPServer, handler_class=S, port=0):
 	cachefile('/index_tamir.html')
 	cachefile('/index.js')
 	cachefile('/style.css')
+	cachefile('/favicon.ico')
 	cachenodes()
 	cachejobs()
 	set_interval(cachenodes, 60*3)
