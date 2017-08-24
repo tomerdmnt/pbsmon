@@ -40,18 +40,23 @@ or the general help message
 ```
 $ pbsmon -h
 usage: pbsmon [-h]
-              {ls,queues,cpuutil,memutil,walltime0,cputime0,runtime-outliers}
+              
+              {ls,queues,cpuutil,memutil,walltime0,cputime,runtime-outliers,memabuse,monitor,web,checknfs}
               ...
 
 commands:
-  {ls,queues,cpuutil,memutil,walltime0,cputime0,runtime-outliers}
+  {ls,queues,cpuutil,memutil,walltime0,cputime,runtime-outliers,memabuse,monitor,web,checknfs}
     ls                  List clusters and nodes in cluster
     queues              List queues in cluster
     cpuutil             Display cluster's CPU utilization
     memutil             Display cluster's Memory utilization
     walltime0           List running jobs with walltime 0
-    cputime0            List running jobs insufficient cputime
+    cputime             List running jobs low cputime
     runtime-outliers    List jobs with unlikely runtime
+    memabuse            List servers with memory abuse
+    monitor             monitor simulation
+    web                 web monitor
+    checknfs            check an nfs mount is up
 
 flags:
   -h, --help            show this help message and exit 
@@ -166,6 +171,114 @@ Monitoring simulation, where the alerts and recepients are written to stdout, an
 $ pbsmon monitor tamir-nano4
 ```
 
+### pbsmon cputime
+List running jobs low cputime, i.e. find jobs with a ratio between walltime and cputime lower than k.
+k defaults to .5
+
+```
+$ pbsmon cputime -k .2
+4231056.power8.tau.ac.il              02:05:27 / 908:09:22       zurhadas2 
+4374513.power8.tau.ac.il              05:27:45 / 496:23:16       mich1     
+4580742.power8.tau.ac.il              04:14:27 / 185:15:01       mich1     
+4912946.power8.tau.ac.il              00:01:04 / 00:38:50        renanaco  
+4229855.power8.tau.ac.il              01:57:57 / 953:43:57       zurhadas2 
+4345069.power8.tau.ac.il              01:04:29 / 528:58:27       zurhadas2 
+4384536.power8.tau.ac.il              00:00:07 / 435:11:40       okushnir  
+4384634.power8.tau.ac.il              01:06:27 / 431:29:52       okushnir  
+4415841.power8.tau.ac.il              09:24:48 / 382:05:39       zoharzaf  
+4417436.power8.tau.ac.il              02:40:16 / 360:28:58       shimshi   
+4569304.power8.tau.ac.il              02:53:31 / 241:28:10       zoharzaf  
+4595657.power8.tau.ac.il              00:07:02 / 164:37:34       zurhadas2 
+```
+
+### pbsmon memabuse
+List servers with memory abuse. memory abuse occurs when jobs on a certain node takes enough memory so that
+the server won't be able to run jobs on all of its cpus during a load, because the memory will become the
+limiting factor
+
+```
+$ pbsmon memabuse
+compute-0-80        5 jobs   251.9gb/252.4gb    talimc,renanaco
+compute-0-211       23 jobs    61.5gb/62.3gb     zurhadas2,xpxu2010,mich1,renanaco
+compute-0-214       1 jobs   248.0gb/248.0gb    talimc
+```
+
+### pbsmon checknfs
+check an nfs mount is up.
+
+```
+$pbsmon checknfs /tamir
+/tamir is down
+$ pbsmon checknfs /tamir1
+/tamir1 is up
+```
+
+### pbsmon web
+Starts the web monitoring application.
+
+If no port is included, a port is chosen by the system
+
+```
+$ pbsmon web tamir-nano4
+```
+
+However you can choose a specific port
+
+```
+$ pbsmon web -p 39063 tamir-nano4
+```
+
+The apache server maps /tamir on power8 server to port 39063 using these lines in /etc/httpd/conf/httpd.conf:
+```
+ProxyPassMatch    ^/tamir http://power8.tau.ac.il:39063/
+ProxyPassReverse  ^/tamir http://power8.tau.ac.il:39063/
+```
+
+To start the server and disconnect it from the current ssh session, i.e. we use the nohup unix utility:
+```
+nohup pbsmon web -p 39063 tamir-nano4 &
+```
+
+So if the server is down, this command should be ran.
+
+## monitoring daemon (alerts)
+
+The monitoring daemon runs indefinitely and monitors for the system's health. the alerts can be viewed in the web monitoring page under alerts.
+
+### Types of alerts
+
+#### memabuse
+
+Only while there are queued jobs waiting to be run, issues a warning for each user on each node that has unused cores, but not enough
+memory to run another job
+
+```
+memory abuse (unused cores) on node <hostname>, memory usage: <memory used>/<memory available>, average job memory: <avg job mem>
+```
+
+#### low cputime
+
+Warning for each job when its cputime is less than half of its walltime
+
+```
+job <job id> has low cputime <cputime> / <walltime>
+```
+
+#### nfs
+
+Checks /tamir1 is mounted on power8
+
+```
+/tamir1 is stale or unmounted
+```
+
+#### nano + tamir-short = tamir-nano4
+
+```
+<node name> in tamir-nano4 and not in nano or tamir-short
+<node name> in nano4 and not in tamir-nano4
+<node name> in tamir-short and not in tamir-nano4
+```
 ## python module usage
 
 As a module pbsmon imports the methods: getjobs(), getnodes(), getqueues() and getclusters().
@@ -214,67 +327,11 @@ Get all nodes which mapped through Qlist to the specified cluster.
 ```
 
 ### getqueues()
+
+```python
+>>> from pbsmon import getqueues
+>>>
+>>> getqueues('tamir-nano4')
 ...
-
-## monitoring daemon
-
-The monitoring daemon runs indefinitely and monitors for the system's health. It aggregates alerts for either job owners, or people specified in the System group, and sends these alerts every 60 minutes.
-
-The following chart specifies the different tests the daemon performs, and all conditions for all alerts: 
-
-```flow
-st=>start: Start
-e=>end
-checkqueued=>operation: Check queued jobs on tamir-nano4 and nano4
-isqueued=>condition: Queued jobs?
-checkunusedcores=>operation: Check nodes with unused cores
-isunusedcores=>condition: Node has unused cores? 
-checkmemabuse=>operation: Check node for memory abuse
-ismemabuse=>condition: Memory abuse?
-alertmemabuse=>subroutine: Queue alert on memory abuse on node to all users running on this node
-alertcputunderutil=>subroutine: Queue alert on CPU under-utilization to group system
-checkratio=>operation: Check for cputime/walltime ratio for jobs running over 5 minutes
-isratio=>condition: Is ratio below .5?
-alertratio=>subroutine: Queue alert about under utilized CPU to job owner
-checktamirnano4=>operation: Check nano and tamir-short nodes equal to tamir-nano4
-istamirnano4=>condition: equal?
-alerttamirnano4=>subroutine: Queue alert to system
-checkoffline=>operation: Check for offline nodes in tamir-nano4
-isoffline=>condition: Offline?
-alertoffline=>subroutine: Queue alert to system
-checkdisk=>operation: Check access to /tamir1
-isdisk=>condition: Ok?
-alertdisk=>subroutine: Queue alert to system
-checkruntimeoutliers=>operation: Check for jobs that ended too quickly
-isruntimeoutliers=>condition: Job Ended too quickly?
-alertruntimeoutliers=>subroutine: Queue alert to job owner
-aggregatealerts=>operation: aggregate alerts and send alerts every 60 minutes
-sleep=>operation: sleep for 10 minutes
-
-st->checkqueued->isqueued
-isqueued(yes)->checkunusedcores
-isqueued(no)->cputwalltimeratio
-checkunusedcores->isunusedcores
-isunusedcores(yes)->checkmemabuse
-isunusedcores(no)->checkratio
-isqueued(no)->checkratio
-checkmemabuse->ismemabuse
-ismemabuse(yes)->alertmemabuse
-ismemabuse(no)->checkratio
-alertmemabuse->checkratio->isratio
-isratio(no)->checktamirnano4
-isratio(yes)->alertratio->checktamirnano4
-checktamirnano4->istamirnano4
-istamirnano4(yes)->alerttamirnano4->checkoffline
-istamirnano4(no)->checkoffline
-checkoffline->isoffline
-isoffline(yes)->alertoffline->checkdisk
-isoffline(no)->checkdisk
-checkdisk->isdisk
-isdisk(yes)->alertdisk->checkruntimeoutliers
-isdisk(no)->checkruntimeoutliers
-checkruntimeoutliers->isruntimeoutliers
-isruntimeoutliers(yes)->alertruntimeoutliers->aggregatealerts
-isruntimeoutliers(no)->aggregatealerts
-aggregatealerts->sleep->checkqueued
 ```
+
