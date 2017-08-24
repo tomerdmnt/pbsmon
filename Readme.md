@@ -26,6 +26,13 @@ power8$ export PATH=$PATH:~/.local/bin/
 git clone https://gitlab.com/tomerdmnt/pbsmon && cd pbsmon && python setup.py install --user && echo "export PATH=\$PATH:~/.local/bin/" >> ~/.bashrc && . ~/.bashrc
 ```
 
+### RPM
+
+prepare an rpm (centos package) using the following command from the top of the pbsmon directory tree
+```
+python2 setup.py bdist_rpm
+```
+
 ## command-line usage
 
 pbsmon is a collection of sub commands. You can view a help message corresponding to each subcommand by adding an -h flag, for example:
