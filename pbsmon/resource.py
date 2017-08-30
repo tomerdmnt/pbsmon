@@ -10,6 +10,9 @@ class Resource(dict):
 	def __getitem__(self, key):
 		return super(Resource, self).__getitem__(key.lower())
 
+	def set(self, key, val):
+		return self.__setitem__(key.lower(), val)
+
 	def get(self, key, default=None):
 		return super(Resource, self).get(key.lower(), default)
 	
@@ -18,6 +21,16 @@ class Resource(dict):
 			self[key.lower()] = self[key.lower()] + val
 		else:
 			self[key.lower()] = val
+
+	def parsefield(self, key):
+		val = self[key]
+		parser = findparser(val)
+		self[key] = parser(val)
+	
+	def finish(self):
+		for key in self.keys():
+			self.parsefield(key)
+		return self
 
 	def find(self, substr):
 		fields = {}

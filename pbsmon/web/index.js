@@ -1,5 +1,7 @@
 
 var snapshotloaded = false;
+var current_snapshot = {};
+var clipboard;
 
 function jobsbyhostname(jobs, hostname) {
 	return jobs.filter(function(j){
@@ -152,6 +154,7 @@ function memratio(node) {
 	var used = node["resources_assigned.mem"];
 
 	var meminbytes = function(memstr) {
+		if (!memstr) return 0;
 		var units = memstr.slice(-2);
 		var multiplier = 1;
 		if (units == "kb") multiplier = 1000
@@ -385,12 +388,18 @@ function serversgraph(nodes, jobs) {
 				tr.append("td").text("id");
 				tr.append("td").text(jb["id"])
 					.append("a")
+							.attr("class", "copy-btn")
 							.attr("href", "#")
 							.attr("data-clipboard-text", jb["id"])
 						.text("copy")
 						.on("click", function(){ d3.event.preventDefault(); });
 
-				for (var k in jb) {
+				if (clipboard) clipboard.destroy();
+				clipboard = new Clipboard(document.querySelector(".copy-btn"));
+
+				var keys = Object.keys(jb).sort();
+				for (var i in keys) {
+					var k = keys[i];
 					if (k === "id") continue;
 					var tr = table.append("tr")
 					tr.append("td").text(k);
@@ -497,13 +506,15 @@ function showgraph() {
 		.defer(d3.json, prefix + "nodes.json")
 		.await(function(err, jobs, nodes) {
 			if (err) return console.log(err);
+			current_snapshot.jobs = jobs;
+			current_snapshot.nodes = nodes;
 			queuesgraph(jobs);
 			serversgraph(nodes, jobs);
-			new Clipboard(".job");
 		});
 }
 
 function updatealerts(alerts) {
+	if (!alerts) return;
 	var alertsdiv = d3.select(".alerts");
 	alertsdiv.selectAll("table").remove();
 
@@ -526,12 +537,14 @@ function pathprefix() {
 }
 
 function fetchalerts() {
+	if (snapshotloaded) return;
 	var prefix = location.pathname;
 	if (prefix[prefix.length-1] !== "/")
 		prefix += '/';
 
 	d3.json(prefix + "alerts.json", function(err, alerts) {
 		if (err) return console.log(err);
+		current_snapshot.alerts = alerts;
 		updatealerts(alerts);
 	});
 }
@@ -555,13 +568,8 @@ function searchjob() {
 }
 
 function savesnapshot() {
-	console.log("saving snapshot");
-	var snapshot = {
-		nodes: d3.selectAll(".node").data(),
-		jobs: d3.selectAll(".job").data()
-	};
 	var filename = "snapshot-" + new Date().getTime() + ".pbsmon";
-	var file = new File([JSON.stringify(snapshot)], filename, {type: "text/plain;charset=utf-8"});
+	var file = new File([JSON.stringify(current_snapshot)], filename, {type: "text/plain;charset=utf-8"});
 	saveAs(file, filename);
 }
 
@@ -574,6 +582,7 @@ function loadsnapshot() {
 		var snapshot = JSON.parse(e.target.result);
 		queuesgraph(snapshot.jobs);
 		serversgraph(snapshot.nodes, snapshot.jobs);
+		updatealerts(snapshot.alerts)
 
 		d3.select(".showingsnapshot")
 			.text(" viewing " + file.name + "; click to go back")

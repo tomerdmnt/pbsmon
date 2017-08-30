@@ -6,18 +6,6 @@ class Queue(resource.Resource):
 		self._name = name
 		self.set('name', name)
 
-	def set(self, key, val):
-		parser = resource.findparser(val)
-		self[key] = parser(val)
-
-	def append(self, key, val):
-		parser = resource.findparser(val)
-		field = self.get(key)
-		if isinstance(field, list):
-			field.append(parser(val))
-		else:
-			self[key] = [field, parser(val)]
-	
 	def __hash__(self):
 		return hash(self._name)
 
@@ -42,6 +30,8 @@ def _parse_queues():
 				queue.set(key, val)
 			elif line[4] == '+=':
 				queue.append(key, val)
+	for k in queues.keys():
+		queues[k].finish()
 	return queues
 
 

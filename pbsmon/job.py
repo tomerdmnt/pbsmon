@@ -4,10 +4,11 @@ from queue import getqueues
 from node import getnodes
 
 class Job(resource.Resource):
-	def set(self, key, val):
+	def parsefield(self, key):
+		val = self[key]
 		parser = resource.findparser(val)
 		self[key] = parser(val)
-		if key == 'Job_Owner':
+		if key == 'job_owner':
 			self['user'] = val.split('@')[0]
 	
 	def __hash__(self):
@@ -44,19 +45,19 @@ def getjobs(cluster=None):
 def _parse_jobs():
 	p = subprocess.Popen(['qstat', '-f'], stdout=subprocess.PIPE)
 	jobs = []
-	job = Job()
+	job = None
 	key = ""
 	for line in p.stdout:
-		# end of job 
-		if line.strip() == "":
-			jobs.append(job)
+		# start/end of job 
+		if line.startswith('Job Id:'):
+			if job is not None:
+				jobs.append(job.finish())
 			job = Job()
-		else:
 			# parse field of job
-			if line.startswith('Job Id:'):
-				id = line.split(':')[1].strip()
-				job.set('Id', id)
-				continue
+			id = line.split(':')[1].strip()
+			job.set('Id', id)
+			continue
+		else:
 			field = line.split(' = ')
 			if len(field) > 1:
 				key = field[0].strip()
@@ -66,6 +67,6 @@ def _parse_jobs():
 				# append to last field
 				job.append(key, line.strip())
 	# last node if not empty
-	if job:
-		jobs.append(job)
+	if job is not None:
+		jobs.append(job.finish())
 	return jobs

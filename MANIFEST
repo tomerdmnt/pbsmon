@@ -2,6 +2,7 @@
 setup.py
 bin/pbsmon
 pbsmon/__init__.py
+pbsmon/checknfs.py
 pbsmon/job.py
 pbsmon/monitor.py
 pbsmon/node.py
@@ -9,3 +10,11 @@ pbsmon/queue.py
 pbsmon/resource.py
 pbsmon/runtime.py
 pbsmon/size.py
+pbsmon/web/__init__.py
+pbsmon/web/index.html
+pbsmon/web/index.js
+pbsmon/web/index_tamir.html
+pbsmon/web/style.css
+pbsmon/web/tmp.py
+pbsmon/web/web.py
+pbsmon/web/web_test.py

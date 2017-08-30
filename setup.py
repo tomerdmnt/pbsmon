@@ -8,6 +8,6 @@ setup(name='pbsmon',
 		author='Tomer Diament',
 		author_email='tomer.dmnt@gmail.com',
 		packages=['pbsmon', 'pbsmon/web'],
-		package_data={'': ['*.css','*.html','*.js']},
+		package_data={'': ['*.css','*.html','*.js', '*.ico']},
 		scripts=['bin/pbsmon']
 	 )

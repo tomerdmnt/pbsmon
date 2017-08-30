@@ -3,9 +3,10 @@ import subprocess
 import sets
 
 class Node(resource.Resource):
-	def set(self, key, val):
+	def parsefield(self, key):
+		val = self[key]
 		parser = resource.findparser(val)
-		if key == 'resources_available.Qlist':
+		if key == 'resources_available.qlist':
 			parser = resource.parselist
 		elif key == 'state':
 			parser = str
@@ -29,7 +30,7 @@ def _parse_nodes():
 	for line in p.stdout:
 		# end of node
 		if line.strip() == "":
-			nodes.append(node)
+			nodes.append(node.finish())
 			node = Node()
 		else:
 			# parse field of node
@@ -42,7 +43,7 @@ def _parse_nodes():
 				node.set('hostname', field[0].strip())
 	# last node if not empty
 	if node:
-		nodes.append(node)
+		nodes.append(node.finish())
 	return nodes
 
 def getclusters():
