@@ -1,21 +1,63 @@
 
-var snapshotloaded = false;
-var current_snapshot = {};
 var clipboard;
+var snapshot = {
+	isloaded: false,
+	current: {}
+}
+var jobinfomodal;
 
+// save a snapshot of the system to a local file
+function savesnapshot() {
+	var filename = "snapshot-" + new Date().getTime() + ".pbsmon";
+	var file = new File([JSON.stringify(snapshot.current)], filename, {type: "text/plain;charset=utf-8"});
+	saveAs(file, filename);
+	d3.event.preventDefault();
+}
+
+// loads a snapshot of the system from a local file
+function loadsnapshot() {
+	snapshotloaded = true;
+	var file = d3.event.target.files[0];
+	var r = new FileReader();
+
+	r.addEventListener("load", function(e) {
+		var snapshot = JSON.parse(e.target.result);
+		updatequeues(snapshot.jobs);
+		updatenodes(snapshot.nodes, snapshot.jobs);
+		updatealerts(snapshot.alerts)
+
+		d3.select(".showingsnapshot")
+			.text(" viewing " + file.name + "; click to go back")
+			.on("click", function() {
+				snapshotloaded = false;
+				d3.select(this).text("");
+				document.querySelector("#loadsnapshot").value = null;
+				d3.event.preventDefault();
+				updatedisplay();
+			});
+	});
+	
+	r.readAsText(file);
+}
+
+// returns all jobs running on hostname
+// parses the exec_vnode job field and retrieves
+// the number of cpus the jobs occupies on hostname
 function jobsbyhostname(jobs, hostname) {
 	return jobs.filter(function(j){
 		res = false;
 		if (j["job_state"] !== "R") {
 			return false;
 		}
+		// parse the exec_vnode field to get all hosts
+		// the job runs on
 		var exec_vnode = j["exec_vnode"] || "";
 		var vnodes = exec_vnode.split("+");
 		vnodes.forEach(function(vn){
 			vn = vn.substring(1, vn.length-1);
 			var parts = vn.split(":");
 			host = parts[0];
-			if (host == hostname) {
+			if (host === hostname) {
 				parts.forEach(function(p){
 					var field = p.split("=");
 					if (field[0] == "ncpus") {
@@ -29,12 +71,14 @@ function jobsbyhostname(jobs, hostname) {
 	});
 }
 
+// returns a list of all users running jobs
 function allusers(jobs) {
 	return Array.from(new Set(jobs.map(function(j){
 		return j["user"];
 	}))).filter(function(u){ return u != undefined; });
 }
 
+// returns statistics of queued jobs and running jobs for the  user
 function userqueuesstats(user, queues, jobs) {
 	res = [];
 	idx = 0;
@@ -80,9 +124,12 @@ function userqueuesstats(user, queues, jobs) {
 	return res;
 }
 
-var usermap = {}
-var usermapsize = 0;
+// returns the color assigned to user
+// if user is not in the usermap, assign it a new color
+// and return it
 var usercolor = function() {
+	var usermap = {}
+	var usermapsize = 0;
 	var scale = d3.scaleOrdinal(d3.schemeCategory20);
 	return function(user) {
 		var i = -1;
@@ -97,6 +144,8 @@ var usercolor = function() {
 	}
 }();
 
+// returns the job's color according
+// to the user running the job, and the cpu percent
 var jobcolor = function(job) {
 	var usr = job["user"];
 	var color = usercolor(usr);
@@ -106,6 +155,36 @@ var jobcolor = function(job) {
 	return color.rgb();
 }
 
+// returns the ratio between node's available memory and assigned memory
+function memratio(node) {
+	var avail = node["resources_available.mem"];
+	var used = node["resources_assigned.mem"];
+
+	var meminbytes = function(memstr) {
+		if (!memstr) return 0;
+		var units = memstr.slice(-2);
+		var multiplier = 1;
+		if (units == "kb") multiplier = 1000
+		else if (units == "mb") multiplier = 1000*1000
+		else if (units == "gb") multiplier = 1000*1000*1000
+		else if (units == "tb") multiplier = 1000*1000*1000*1000
+		return parseInt(memstr)*multiplier;
+	}
+	var ratio =  meminbytes(used)/meminbytes(avail);
+	//if (ratio < .05) ratio = .05;
+	return ratio;
+}
+
+// returns the number of cpus per row which should display for node
+// the node always has 4 rows
+function cpuperrow(node) {
+	var x = node["resources_available.ncpus"]/4;
+	x = Math.ceil(x);
+	x = Math.max(x, 4);
+	return x;
+}
+
+// nodes tooltip template
 var nodetip = d3.tip().attr("class", "d3-tip")
 	.attr("class", "d3-tip")
 	.offset([0, 0])
@@ -117,6 +196,7 @@ var nodetip = d3.tip().attr("class", "d3-tip")
 	})
 	.direction("n");
 
+// jobs tooltip template
 var jobtip = d3.tip().attr("class", "d3-tip")
 	.attr("class", "d3-tip")
 	.offset([0, 0])
@@ -137,6 +217,7 @@ var jobtip = d3.tip().attr("class", "d3-tip")
 	})
 	.direction("se");
 
+// memory tooltip tempate
 var memtip = d3.tip()
 	.attr("class", "d3-tip")
 	.offset([-15, 0])
@@ -149,25 +230,9 @@ var memtip = d3.tip()
 			"</div>";
 	});
 
-function memratio(node) {
-	var avail = node["resources_available.mem"];
-	var used = node["resources_assigned.mem"];
-
-	var meminbytes = function(memstr) {
-		if (!memstr) return 0;
-		var units = memstr.slice(-2);
-		var multiplier = 1;
-		if (units == "kb") multiplier = 1000
-		else if (units == "mb") multiplier = 1000*1000
-		else if (units == "gb") multiplier = 1000*1000*1000
-		else if (units == "tb") multiplier = 1000*1000*1000*1000
-		return parseInt(memstr)*multiplier;
-	}
-	var ratio =  meminbytes(used)/meminbytes(avail);
-	//if (ratio < .05) ratio = .05;
-	return ratio;
-}
-
+// returns the recommended direction (n, s, nw, ne, sw, se)
+// of where to display a tooltip according to the distance
+// from the edges of the screen
 function calctipdirection(distance_ns, distance_we, ns, we) {
 	var dright = window.innerWidth - d3.event.clientX;
 	var dleft = d3.event.clientX;
@@ -194,18 +259,13 @@ function calctipdirection(distance_ns, distance_we, ns, we) {
 	return ns + we;
 }
 
-function cpuperrow(node) {
-	var x = node["resources_available.ncpus"]/4;
-	x = Math.ceil(x);
-	x = Math.max(x, 4);
-	return x;
-}
-
-function queuesgraph(jobs) {
+// update the queues table display
+function updatequeues(jobs) {
 	var queuesdiv = d3.select(".queues");
 	var queues = Array.from(new Set(jobs.map(function(j){return j["queue"];})));
 	queues = queues.filter(function(q){ return q != undefined; });
 
+	// draw the table from scratch
 	queuesdiv.selectAll("table").remove();
 
 	var tbl = queuesdiv.append("table")
@@ -274,7 +334,8 @@ function queuesgraph(jobs) {
 	uq.selectAll("td.stats").sort(function(a, b){return a.index - b.index;});
 }
 
-function serversgraph(nodes, jobs) {
+// update the nodes graph display
+function updatenodes(nodes, jobs) {
 	var running = d3.select(".running");
 	d3.select(".cpuutil")
 		.text(nodes.reduce(function(sum, n){ return sum + n["resources_assigned.ncpus"]; }, 0) + " of " +
@@ -379,7 +440,7 @@ function serversgraph(nodes, jobs) {
 				d3.select(this).attr("fill", function (d) { return jobcolor(d); })
 				jobtip.hide(jb);
 			})
-			.on("click", function(jb) {
+			.on("click", function showjobinfo(jb) {
 				var jobinfoel = d3.select(".jobinfo")
 				jobinfoel.selectAll("table").remove();
 
@@ -406,9 +467,7 @@ function serversgraph(nodes, jobs) {
 					tr.append("td").text(jb[k]);
 				}
 
-				toggleJobModal();
-				d3.event.preventDefault();
-				d3.event.stopPropagation();
+				jobinfomodal.toggle();
 			});
 			;
 		jbs.exit().remove();
@@ -494,8 +553,9 @@ function serversgraph(nodes, jobs) {
 	});
 }
 
-function showgraph() {
-	if (snapshotloaded) return;
+// fetch the latest data from the server and update the display
+function updatedisplay() {
+	if (snapshot.isloaded) return;
 	var q = d3.queue();
 
 	var prefix = location.pathname;
@@ -506,13 +566,14 @@ function showgraph() {
 		.defer(d3.json, prefix + "nodes.json")
 		.await(function(err, jobs, nodes) {
 			if (err) return console.log(err);
-			current_snapshot.jobs = jobs;
-			current_snapshot.nodes = nodes;
-			queuesgraph(jobs);
-			serversgraph(nodes, jobs);
+			snapshot.current.jobs = jobs;
+			snapshot.current.nodes = nodes;
+			updatequeues(jobs);
+			updatenodes(nodes, jobs);
 		});
 }
 
+// update the alerts display
 function updatealerts(alerts) {
 	if (!alerts) return;
 	var alertsdiv = d3.select(".alerts");
@@ -529,6 +590,7 @@ function updatealerts(alerts) {
 	tr.append("td").attr("colspan", 4).text(function(alert){ return alert.msg; });
 }
 
+// returns the path prefix (i.e. /tamir/ or /)
 function pathprefix() {
 	var prefix = location.pathname;
 	if (prefix[prefix.length-1] !== "/")
@@ -536,19 +598,21 @@ function pathprefix() {
 	return prefix;
 }
 
+// fetch the latest alerts from the server
 function fetchalerts() {
-	if (snapshotloaded) return;
+	if (snapshot.isloaded) return;
 	var prefix = location.pathname;
 	if (prefix[prefix.length-1] !== "/")
 		prefix += '/';
 
 	d3.json(prefix + "alerts.json", function(err, alerts) {
 		if (err) return console.log(err);
-		current_snapshot.alerts = alerts;
+		snapshot.current.alerts = alerts;
 		updatealerts(alerts);
 	});
 }
 
+// searches all jobs and all fields, and paints matched jobs in yellow
 function searchjob() {
 	var val = d3.event.target.value.toLowerCase();
 	if (val === "") {
@@ -567,37 +631,7 @@ function searchjob() {
 	}
 }
 
-function savesnapshot() {
-	var filename = "snapshot-" + new Date().getTime() + ".pbsmon";
-	var file = new File([JSON.stringify(current_snapshot)], filename, {type: "text/plain;charset=utf-8"});
-	saveAs(file, filename);
-}
-
-function loadsnapshot() {
-	snapshotloaded = true;
-	var file = d3.event.target.files[0];
-	var r = new FileReader();
-
-	r.addEventListener("load", function(e) {
-		var snapshot = JSON.parse(e.target.result);
-		queuesgraph(snapshot.jobs);
-		serversgraph(snapshot.nodes, snapshot.jobs);
-		updatealerts(snapshot.alerts)
-
-		d3.select(".showingsnapshot")
-			.text(" viewing " + file.name + "; click to go back")
-			.on("click", function() {
-				snapshotloaded = false;
-				d3.select(this).text("");
-				document.querySelector("#loadsnapshot").value = null;
-				d3.event.preventDefault();
-				showgraph();
-			});
-	});
-	
-	r.readAsText(file);
-}
-
+// create a modal from some element
 function Modal(el) {
 	d3.select(el).classed("show", false);
 	d3.select(el).classed("modal", true);
@@ -612,35 +646,34 @@ function Modal(el) {
 			d3.select(el).classed("show", false);
 		});
 
-	return function toggleModal() {
-		d3.select(el).classed("show", !d3.select(el).classed("show"));
+	return {
+		show: function() {
+			d3.select(el).classed("show", true);
+		},
+		hide: function() {
+			d3.select(el).classed("show", false);
+		},
+		toggle: function() {
+			d3.select(el).classed("show", !d3.select(el).classed("show"));
+			d3.event.preventDefault();
+			d3.event.stopPropagation();
+		}
 	}
 }
 
-var toggleJobModal;
-
 window.onload = function(e) {
-	showgraph();
-	setInterval(showgraph, 120000);
+	updatedisplay();
+	setInterval(updatedisplay, 120000);
+
 	setTimeout(fetchalerts, 3000);
 	setInterval(fetchalerts, 300000);
 
-	var toggleAlertsModal = Modal(document.querySelector(".alerts"));
-	toggleJobModal = Modal(document.querySelector(".jobinfo"));
+	var alertsmodal = Modal(document.querySelector(".alerts"));
+	jobinfomodal = Modal(document.querySelector(".jobinfo"));
 
-	d3.select(".alertsbtn")
-		.on("click", function() {
-			toggleAlertsModal();
-			d3.event.preventDefault();
-			d3.event.stopPropagation();
-		});
+	d3.select(".alertsbtn").on("click", alertsmodal.toggle);
 	
-	d3.select(".savesnapshotbtn")
-		.on("click", function() {
-			savesnapshot();
-			d3.event.preventDefault();
-		});
-	
+	d3.select(".savesnapshotbtn").on("click", savesnapshot);
 	d3.select("#loadsnapshot").on("change", loadsnapshot);
 
 	d3.select("#search").on("input", searchjob);
