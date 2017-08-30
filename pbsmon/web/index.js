@@ -3,7 +3,7 @@ var clipboard;
 var snapshot = {
 	isloaded: false,
 	current: {}
-}
+};
 var jobinfomodal;
 
 // save a snapshot of the system to a local file
@@ -334,6 +334,86 @@ function updatequeues(jobs) {
 	uq.selectAll("td.stats").sort(function(a, b){return a.index - b.index;});
 }
 
+// adds an S tag to mark STDIN jobs in node
+// selects all node's jobs with class stdin
+function stdintag(node) {
+	// STDIN jobs mark with S tags
+	var stag = d3.select(this).selectAll(".job.stdin .core")
+		.append("g")
+			.attr("class", "stdin-tag")
+			.attr("transform", function(d){ var x=((counter-d-1) % cpuperrow(node))*25+4; var y=Math.floor((counter-d-1)/cpuperrow(node))*25+5; return "translate(" + x + "," + y + ")"; })
+		;
+	stag.append("circle")
+			.attr("fill", "white")
+			.attr("cx", "2.5")
+			.attr("cy", "2.5")
+			.attr("r", "5")
+		;
+	stag.append("text")
+			.attr("font-size", ".5em")
+			.attr("x", ".3")
+			.attr("y", "4.5")
+			.attr("fill", "black")
+			.attr("stroke", "black")
+			.attr("font-weight", "100")
+		.text("S");
+}
+
+// adds an I tag to mark interactive jobs in node
+// selects all node's jobs with class stdin
+function interactivetag(node) {
+	// interactive jobs mark with I tags
+	var itag = d3.select(this).selectAll(".job.interactive .core")
+		.append("g")
+			.attr("class", "interactive-tag")
+			.attr("transform", function(d){ var x=((counter-d-1) % cpuperrow(node))*25+16; var y=Math.floor((counter-d-1)/cpuperrow(node))*25+5; return "translate(" + x + "," + y + ")"; })
+		;
+	itag.append("circle")
+			.attr("fill", "black")
+			.attr("cx", "2.5")
+			.attr("cy", "2.5")
+			.attr("r", "5")
+		;
+	itag.append("text")
+			.attr("font-size", ".5em")
+			.attr("x", "1")
+			.attr("y", "4.5")
+			.attr("fill", "white")
+			.attr("stroke", "white")
+			.attr("font-weight", "100")
+		.text("I");
+}
+
+function showjobinfo(jb) {
+	var jobinfoel = d3.select(".jobinfo")
+	jobinfoel.selectAll("table").remove();
+
+	var table = jobinfoel.append("table").append("tbody");
+	var tr = table.append("tr");
+	tr.append("td").text("id");
+	tr.append("td").text(jb["id"])
+		.append("a")
+				.attr("class", "copy-btn")
+				.attr("href", "#")
+				.attr("data-clipboard-text", jb["id"])
+			.text("copy")
+			.on("click", function(){ d3.event.preventDefault(); });
+
+	if (clipboard) clipboard.destroy();
+	clipboard = new Clipboard(document.querySelector(".copy-btn"));
+
+	var keys = Object.keys(jb).sort();
+	for (var i in keys) {
+		var k = keys[i];
+		if (k === "id") continue;
+		var tr = table.append("tr")
+		tr.append("td").text(k);
+		tr.append("td").text(jb[k]);
+	}
+
+	jobinfomodal.toggle();
+}
+
 // update the nodes graph display
 function updatenodes(nodes, jobs) {
 	var running = d3.select(".running");
@@ -425,6 +505,7 @@ function updatenodes(nodes, jobs) {
 			.selectAll("g.job")
 			.data(jobsbyhostname(jobs, n["hostname"]), function key(j){ return j["id"]; });
 
+		// add running jobs to node
 		jbs.enter().append("g")
 				.attr("class", "job")
 				.attr("transform", "translate(0, 42)")
@@ -440,35 +521,7 @@ function updatenodes(nodes, jobs) {
 				d3.select(this).attr("fill", function (d) { return jobcolor(d); })
 				jobtip.hide(jb);
 			})
-			.on("click", function showjobinfo(jb) {
-				var jobinfoel = d3.select(".jobinfo")
-				jobinfoel.selectAll("table").remove();
-
-				var table = jobinfoel.append("table").append("tbody");
-				var tr = table.append("tr");
-				tr.append("td").text("id");
-				tr.append("td").text(jb["id"])
-					.append("a")
-							.attr("class", "copy-btn")
-							.attr("href", "#")
-							.attr("data-clipboard-text", jb["id"])
-						.text("copy")
-						.on("click", function(){ d3.event.preventDefault(); });
-
-				if (clipboard) clipboard.destroy();
-				clipboard = new Clipboard(document.querySelector(".copy-btn"));
-
-				var keys = Object.keys(jb).sort();
-				for (var i in keys) {
-					var k = keys[i];
-					if (k === "id") continue;
-					var tr = table.append("tr")
-					tr.append("td").text(k);
-					tr.append("td").text(jb[k]);
-				}
-
-				jobinfomodal.toggle();
-			});
+			.on("click", showjobinfo);
 			;
 		jbs.exit().remove();
 
@@ -491,47 +544,9 @@ function updatenodes(nodes, jobs) {
 				.attr("y", function(d) { return Math.floor((counter-d-1)/cpuperrow(n)) * 25; })
 			;
 
-		// STDIN jobs mark with S tags
-		var stag = d3.select(this).selectAll(".job.stdin .core")
-			.append("g")
-				.attr("class", "stdin-tag")
-				.attr("transform", function(d){ var x=((counter-d-1) % cpuperrow(n))*25+4; var y=Math.floor((counter-d-1)/cpuperrow(n))*25+5; return "translate(" + x + "," + y + ")"; })
-			;
-		stag.append("circle")
-				.attr("fill", "white")
-				.attr("cx", "2.5")
-				.attr("cy", "2.5")
-				.attr("r", "5")
-			;
-		stag.append("text")
-				.attr("font-size", ".5em")
-				.attr("x", ".3")
-				.attr("y", "4.5")
-				.attr("fill", "black")
-				.attr("stroke", "black")
-				.attr("font-weight", "100")
-			.text("S");
-
-		// interactive jobs mark with I tags
-		var itag = d3.select(this).selectAll(".job.interactive .core")
-			.append("g")
-				.attr("class", "interactive-tag")
-				.attr("transform", function(d){ var x=((counter-d-1) % cpuperrow(n))*25+16; var y=Math.floor((counter-d-1)/cpuperrow(n))*25+5; return "translate(" + x + "," + y + ")"; })
-			;
-		itag.append("circle")
-				.attr("fill", "black")
-				.attr("cx", "2.5")
-				.attr("cy", "2.5")
-				.attr("r", "5")
-			;
-		itag.append("text")
-				.attr("font-size", ".5em")
-				.attr("x", "1")
-				.attr("y", "4.5")
-				.attr("fill", "white")
-				.attr("stroke", "white")
-				.attr("font-weight", "100")
-			.text("I");
+		// add STDIN and interactive tags to node's jobs
+		stdintag.call(this, n);
+		interactivetag.call(this, n);
 
 		// add the unused cores
 		d3.select(this).selectAll("rect.cpus").remove();

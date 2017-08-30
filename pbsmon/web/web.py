@@ -13,12 +13,11 @@ from time import strftime, localtime
 PATH = os.path.dirname(os.path.abspath(__file__))
 
 class _globals:
-    pass
+	cluster = None
+	filecache = {}
+	alerts = []
 
 __globals = _globals()
-__globals.cluster = None
-__globals.filecache = {}
-__globals.alerts = []
 
 def gzipcompress(data):
 	out = StringIO.StringIO()
