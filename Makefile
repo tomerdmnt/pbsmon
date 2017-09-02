@@ -5,7 +5,7 @@ setup:
 	$(PYTHON) setup.py install --user	
 
 run:
-	nohup pbsmon web -p $(PORT)
+	nohup pbsmon web -p $(PORT) &
 
 .PHONY: setup run
 	

@@ -16,24 +16,25 @@ function savesnapshot() {
 
 // loads a snapshot of the system from a local file
 function loadsnapshot() {
-	snapshotloaded = true;
+	snapshot.isloaded = true;
 	var file = d3.event.target.files[0];
 	var r = new FileReader();
 
 	r.addEventListener("load", function(e) {
-		var snapshot = JSON.parse(e.target.result);
-		updatequeues(snapshot.jobs);
-		updatenodes(snapshot.nodes, snapshot.jobs);
-		updatealerts(snapshot.alerts)
+		var snap = JSON.parse(e.target.result);
+		updatequeues(snap.jobs);
+		updatenodes(snap.nodes, snap.jobs);
+		updatealerts(snap.alerts)
 
 		d3.select(".showingsnapshot")
 			.text(" viewing " + file.name + "; click to go back")
-			.on("click", function() {
-				snapshotloaded = false;
+			.on("click", function undisplaysnapshot() {
+				snapshot.isloaded = false;
 				d3.select(this).text("");
 				document.querySelector("#loadsnapshot").value = null;
 				d3.event.preventDefault();
 				updatedisplay();
+				fetchalerts();
 			});
 	});
 	
