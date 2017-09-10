@@ -211,7 +211,7 @@ var jobtip = d3.tip().attr("class", "d3-tip")
 			"<span>CPU:</span>" + d["resources_used.cpupercent"] + "%" + " of " + d["resources_used.ncpus"] + " cores" + "</br />" +
 			"<span>Memory:</span>" + d["resources_used.mem"] + " / " + d["resource_list.mem"] + "<br />" +
 			"<span>Virtual Memory:</span>" + d["resources_used.vmem"] + " / " + d["resource_list.vmem"] + "<br />" +
-			"<span>Physical Memory:</span>" + d["resources_used.pmem"] + " / " + d["resource_list.pmem"] + "<br />";
+			"<span>Physical Memory:</span>" + d["resource_list.pmem"] + "<br />";
 		if (d["interactive"]) text += "<span></span>Interactive";
 		text += "</div>";
 		return text;
